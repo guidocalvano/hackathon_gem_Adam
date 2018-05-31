@@ -6,21 +6,26 @@ import matplotlib.pyplot as plt
 from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
 import sys
 import config
+import math
 
 def load_data_set(image_description_file_path, image_path, target_size):
     # not finished
-    image_description = pd.read_csv(image_description_file_path).iloc[:10] # this will reduce your number of examples to 10 .iloc[:10]
+    image_description = pd.read_csv(image_description_file_path).iloc[:75] # this will reduce your number of examples to 10 .iloc[:10]
 
-    image_file_paths = get_image_file_paths(image_description.foto, image_path)
+    image_file_paths = get_image_file_paths(image_description.filename, image_path)
 
     images, is_successful = load_image_tensor(image_file_paths, target_size)
 
     successful_description = image_description.iloc[is_successful]
 
-    return images, None # none will be replaced with labels
+    successful_description.index = range(successful_description.shape[0])
+
+    labels = successful_description.label_type_int
+
+    return images, labels # none will be replaced with labels
 
 def get_image_file_paths(image_series, image_path):
-    return image_path + image_series.str.slice(2, -2)
+    return image_path + image_series
 
 def load_image_tensor(image_file_paths, target_size):
 
@@ -116,24 +121,77 @@ def normalize_test_images(data, mean, standard_deviation):
 
     return standardized_data
 
-def split_data_set(full_set):
+def split_data_set(full_set, split_ratios):
 
     examples, labels = full_set
 
-    label_types = np.sort(np.unique(labels))
+    split_indices = stratified_split_indices_from(labels, split_ratios)
 
-    split_indices_per_label_type = []
+    split_data_set = {
+        "training": (examples[split_indices["training"]], labels[split_indices["training"]]),
+        "validation": (examples[split_indices["validation"]], labels[split_indices["validation"]]),
+        "test": (examples[split_indices["test"]], labels[split_indices["test"]])
+    }
+
+    return split_data_set
+
+def stratified_split_indices_from(labels, split_ratios):
+    training_ratio = split_ratios["training"]
+    validation_ratio = split_ratios["validation"]
+    test_ratio = split_ratios["test"]
+
+    label_types = np.sort(np.unique(labels))
+    assert abs(1 - (split_ratios["training"] + split_ratios["validation"] + split_ratios["test"])) < .01
+
+    training_indices = []
+    validation_indices = []
+    test_indices = []
 
     for label_type in label_types:
-        lable_type_indices = np.where(labels == label_type)
+        label_type_indices = np.where(labels == label_type)[0].copy()
+        np.random.shuffle(label_type_indices)
 
+        training_offset = 0
+        validation_offset = int(label_type_indices.shape[0] * training_ratio)
+        test_offset = int(label_type_indices.shape[0] * (training_ratio + validation_ratio))
 
+        label_type_training_indices = label_type_indices[training_offset: validation_offset]
+        label_type_validation_indices = label_type_indices[validation_offset:test_offset]
+        label_type_test_indices = label_type_indices[test_offset:]
 
-def import_all_data():
-    image_tensor, labels = load_data_set(config.DATA_DESCRIPTION_FILE, config.IMAGE_PATH, [100, 10])
+        training_indices.append(label_type_training_indices)
+        validation_indices.append(label_type_validation_indices)
+        test_indices.append(label_type_test_indices)
 
-    training, validation, test = split_data_set((image_tensor, labels))
+    training_indices = np.concatenate(training_indices)
+    validation_indices = np.concatenate(validation_indices)
+    test_indices = np.concatenate(test_indices)
 
-    normalized_image_tensor, mean, standard_deviation = normalize_data(image_tensor)
+    return {
+        "training": training_indices,
+        "validation": validation_indices,
+        "test": test_indices
+    }
 
-    return
+def import_all_data(data_description_file, image_path, target_size):
+
+    image_tensor, labels = load_data_set(data_description_file, image_path, target_size)
+
+    split = split_data_set((image_tensor, labels), {
+        "training": .5,
+        "validation": .25,
+        "test": .25
+    })
+
+    normalized_training_examples, mean, standard_deviation = normalize_data(split["training"][0])
+    normalized_validation_examples = normalize_test_images(split["validation"][0], mean, standard_deviation)
+    normalized_test_examples = normalize_test_images(split["test"][0], mean, standard_deviation)
+
+    return {
+        "training": (normalized_training_examples, split["training"][1]),
+        "validation": (normalized_validation_examples, split["validation"][1]),
+        "test": (normalized_test_examples, split["test"][1])
+    }
+
+ds = import_all_data(config.DATA_DESCRIPTION_FILE, config.IMAGE_PATH, config.INPUT_SIZE)
+print("done")
