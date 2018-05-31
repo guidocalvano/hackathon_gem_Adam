@@ -7,6 +7,8 @@ from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_a
 import sys
 import config
 import math
+from keras.utils import to_categorical
+
 
 def load_data_set(image_description_file_path, image_path, target_size):
     # not finished
@@ -193,5 +195,9 @@ def import_all_data(data_description_file, image_path, target_size):
         "test": (normalized_test_examples, split["test"][1])
     }
 
-ds = import_all_data(config.DATA_DESCRIPTION_FILE, config.IMAGE_PATH, config.INPUT_SIZE)
-print("done")
+def convert_to_categorical(ds, label_type_count):
+    result = {}
+    for key, data_set in ds.items():
+        result[key] = (data_set[0], to_categorical(data_set[1], num_classes=label_type_count))
+
+    return result
