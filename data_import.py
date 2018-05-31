@@ -7,12 +7,15 @@ from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_a
 import sys
 import config
 import math
+import os
+import pickle
+
 from keras.utils import to_categorical
 
 
 def load_data_set(image_description_file_path, image_path, target_size):
     # not finished
-    image_description = pd.read_csv(image_description_file_path).iloc[:75] # this will reduce your number of examples to 10 .iloc[:10]
+    image_description = pd.read_csv(image_description_file_path) # this will reduce your number of examples to 10 .iloc[:10]
 
     image_file_paths = get_image_file_paths(image_description.filename, image_path)
 
@@ -201,3 +204,18 @@ def convert_to_categorical(ds, label_type_count):
         result[key] = (data_set[0], to_categorical(data_set[1], num_classes=label_type_count))
 
     return result
+
+def default_cache_load():
+    cache_file_path = config.DEFAULT_CACHE_FILE_PATH
+
+    if os.path.isfile(cache_file_path):
+        res = pickle.load(open(cache_file_path, 'rb'))
+        return res
+
+    ds = convert_to_categorical(import_all_data(config.DATA_DESCRIPTION_FILE, config.IMAGE_PATH, config.INPUT_SIZE), config.CLASS_COUNT)
+
+    pickle.dump(ds, open(cache_file_path, 'wb'))
+
+    return ds
+
+
