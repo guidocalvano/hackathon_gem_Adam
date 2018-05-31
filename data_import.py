@@ -8,42 +8,43 @@ import sys
 
 import config
 
-def load_data_set(image_description_file_path, image_path):
+def load_data_set(image_description_file_path, image_path, target_size):
     # not finished
-    image_description = pd.read_csv(image_description_file_path)
+    image_description = pd.read_csv(image_description_file_path).iloc[:10]
 
-    image_file_paths = get_image_file_paths(image_description.foto)
+    image_file_paths = get_image_file_paths(image_description.foto, image_path)
 
-    images = load_image_tensor(image_file_paths, [100, 10])
+    images = load_image_tensor(image_file_paths, target_size)
 
     return images, None # none will be replaced with labels
 
 def get_image_file_paths(image_series, image_path):
-    return image_series.str.slice(1, -1)[0]
+    return image_path + image_series.str.slice(2, -2)
 
 def load_image_tensor(image_file_paths, target_size):
 
     target_ratio = target_size[1] / target_size[0]
 
-    image_array_list = []
+    standardized_ratio_array = []
 
     for i in range(image_file_paths.shape[0]):
         next_image = load_img(image_file_paths[i])
         image_array = np.array(next_image)
 
-        standardized_image_array = standardize_image_ratio(image_array, target_ratio)
+        standardized_ratio_image = standardize_image_ratio(image_array, target_ratio)
 
-        downsampled_image_array = standardize_resolution(standardized_image_array)
+        standardized_ratio_array.append(standardized_ratio_image)
 
-        image_array_list.append(downsampled_image_array)
+    downsampled_image_arrays = standardize_resolution(standardized_ratio_array)
 
-    image_tensor = np.concatenate(image_array_list)
+
+    image_tensor = np.concatenate(downsampled_image_arrays)
 
     return image_tensor
 
 
 def standardize_image_ratio(image_array, target_ratio):
-    (width, height) = image_array.shape
+    (width, height, _) = image_array.shape
 
     target_height = width * target_ratio
     target_width = height / target_ratio
@@ -51,7 +52,7 @@ def standardize_image_ratio(image_array, target_ratio):
     if target_height < height:
         excess_height = height - target_height
         slice_start = int(excess_height / 2)
-        slice_end = slice_start + height
+        slice_end = slice_start + int(target_height)
 
         cropped_image = image_array[:, slice_start:slice_end]
 
@@ -60,7 +61,7 @@ def standardize_image_ratio(image_array, target_ratio):
     if target_width < width:
         excess_width = width - target_width
         slice_start = int(excess_width / 2)
-        slice_end = slice_start + width
+        slice_end = slice_start + int(target_width)
 
         cropped_image = image_array[slice_start:slice_end, :]
 
@@ -70,17 +71,18 @@ def standardize_image_ratio(image_array, target_ratio):
 
 
 def standardize_resolution(image_arrays, target_size):
-    sess = tf.Sesssion()
-
-    image_tf = tf.placeholder()
-
-    resized_image_tf = tf.image.resize_images(image_tf, size=target_size)
+    sess = tf.Session()
 
     resized_images = []
 
     with sess.as_default():
         for i in len(image_arrays):
-            original = image_arrays[i]
+
+            original = image_arrays[i].astype('float')
+            image_tf = tf.placeholder(tf.float32, shape=original.shape)
+
+            resized_image_tf = tf.image.resize_images(image_tf, size=target_size)
+
             resized = resized_image_tf.eval({image_tf: original})
 
             resized_images.append(resized)
@@ -105,6 +107,8 @@ def normalize_test_images(data, mean, standard_deviation):
     return standardized_data
 
 def import_all_data():
+    image_tensor, labels = load_data_set(config.DATA_DESCRIPTION_FILE, config.IMAGE_PATH, [100, 10])
+
 
 
     return
