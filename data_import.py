@@ -10,11 +10,13 @@ import config
 
 def load_data_set(image_description_file_path, image_path, target_size):
     # not finished
-    image_description = pd.read_csv(image_description_file_path).iloc[:10]
+    image_description = pd.read_csv(image_description_file_path) # this will reduce your number of examples to 10 .iloc[:10]
 
     image_file_paths = get_image_file_paths(image_description.foto, image_path)
 
-    images = load_image_tensor(image_file_paths, target_size)
+    images, is_successful = load_image_tensor(image_file_paths, target_size)
+
+    successful_description = image_description.iloc[is_successful]
 
     return images, None # none will be replaced with labels
 
@@ -27,27 +29,35 @@ def load_image_tensor(image_file_paths, target_size):
 
     standardized_ratio_array = []
 
+    is_successful = np.zeros([len(image_file_paths)]).astype(bool)
+
     for i in range(image_file_paths.shape[0]):
-        next_image = load_img(image_file_paths[i])
-        image_array = np.array(next_image)
+        try:
+            next_image = load_img(image_file_paths[i])
+            image_array = np.array(next_image)
 
-        standardized_ratio_image = standardize_image_ratio(image_array, target_ratio)
+            standardized_ratio_image = standardize_image_ratio(image_array, target_ratio)
 
-        standardized_ratio_array.append(standardized_ratio_image)
+            standardized_ratio_array.append(standardized_ratio_image)
+            is_successful[i] = True
+        except: # this should match specific errors but if I did the code would be clean and this IS a hackathon
+            pass
 
-    downsampled_image_arrays = standardize_resolution(standardized_ratio_array)
 
+    target_ratio_height_per_width = target_size[1] / target_size[0]
+    downsampled_image_arrays = standardize_resolution(standardized_ratio_array, target_size)
 
     image_tensor = np.concatenate(downsampled_image_arrays)
 
-    return image_tensor
+    # return array containing ONLY successful images (without holes) and a boolean indexing vector with successful loads
+    return image_tensor, is_successful
 
 
-def standardize_image_ratio(image_array, target_ratio):
+def standardize_image_ratio(image_array, target_ratio_height_per_width):
     (width, height, _) = image_array.shape
 
-    target_height = width * target_ratio
-    target_width = height / target_ratio
+    target_height = width * target_ratio_height_per_width
+    target_width = height / target_ratio_height_per_width
 
     if target_height < height:
         excess_height = height - target_height
@@ -76,7 +86,7 @@ def standardize_resolution(image_arrays, target_size):
     resized_images = []
 
     with sess.as_default():
-        for i in len(image_arrays):
+        for i in range(len(image_arrays)):
 
             original = image_arrays[i].astype('float')
             image_tf = tf.placeholder(tf.float32, shape=original.shape)
