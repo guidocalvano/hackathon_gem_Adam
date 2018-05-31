@@ -18,7 +18,9 @@ def load_image_set(image_description_file_path, image_path):
 
     return image
 
-def load_image_tensor(image_file_paths):
+def load_image_tensor(image_file_paths, target_size):
+
+    target_ratio = target_size[1] / target_size[0]
 
     image_array_list = []
 
@@ -26,9 +28,9 @@ def load_image_tensor(image_file_paths):
         next_image = load_img(image_file_paths[i])
         image_array = np.array(next_image)
 
-        standardized_image_array = standardize_image_size(image_array)
+        standardized_image_array = standardize_image_ratio(image_array, target_ratio)
 
-        downsampled_image_array = resize_images(standardized_image_array)
+        downsampled_image_array = standardize_resolution(standardized_image_array)
 
         image_array_list.append(downsampled_image_array)
 
@@ -36,11 +38,9 @@ def load_image_tensor(image_file_paths):
 
     return image_tensor
 
-def standardize_image_size(image_array):
-    (width, height) = image_array.shape
-    ratio = height / width
 
-    target_ratio = config.COMMON_RATIO
+def standardize_image_ratio(image_array, target_ratio):
+    (width, height) = image_array.shape
 
     target_height = width * target_ratio
     target_width = height / target_ratio
@@ -66,7 +66,7 @@ def standardize_image_size(image_array):
     return image_array
 
 
-def resize_images(image_arrays, target_size):
+def standardize_resolution(image_arrays, target_size):
     sess = tf.Sesssion()
 
     image_tf = tf.placeholder()
