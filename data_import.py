@@ -5,12 +5,11 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
 import sys
-
 import config
 
 def load_data_set(image_description_file_path, image_path, target_size):
     # not finished
-    image_description = pd.read_csv(image_description_file_path) # this will reduce your number of examples to 10 .iloc[:10]
+    image_description = pd.read_csv(image_description_file_path).iloc[:10] # this will reduce your number of examples to 10 .iloc[:10]
 
     image_file_paths = get_image_file_paths(image_description.foto, image_path)
 
@@ -89,6 +88,7 @@ def standardize_resolution(image_arrays, target_size):
         for i in range(len(image_arrays)):
 
             original = image_arrays[i].astype('float')
+            original = np.expand_dims(original, axis=0)
             image_tf = tf.placeholder(tf.float32, shape=original.shape)
 
             resized_image_tf = tf.image.resize_images(image_tf, size=target_size)
@@ -100,7 +100,7 @@ def standardize_resolution(image_arrays, target_size):
     return resized_images
 
 
-def normalize_data(data):
+def normalize_data(data): # does not take into account night or day
     mean = np.mean(data)
     centered_data = data - mean
     standard_deviation = np.std(centered_data) + sys.float_info.epsilon
@@ -116,9 +116,24 @@ def normalize_test_images(data, mean, standard_deviation):
 
     return standardized_data
 
+def split_data_set(full_set):
+
+    examples, labels = full_set
+
+    label_types = np.sort(np.unique(labels))
+
+    split_indices_per_label_type = []
+
+    for label_type in label_types:
+        lable_type_indices = np.where(labels == label_type)
+
+
+
 def import_all_data():
     image_tensor, labels = load_data_set(config.DATA_DESCRIPTION_FILE, config.IMAGE_PATH, [100, 10])
 
+    training, validation, test = split_data_set((image_tensor, labels))
 
+    normalized_image_tensor, mean, standard_deviation = normalize_data(image_tensor)
 
     return
