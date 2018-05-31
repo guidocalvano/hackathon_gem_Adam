@@ -8,15 +8,18 @@ import sys
 
 import config
 
-def load_image_set(image_description_file_path, image_path):
+def load_data_set(image_description_file_path, image_path):
     # not finished
     image_description = pd.read_csv(image_description_file_path)
 
-    image_file_paths = []
+    image_file_paths = get_image_file_paths(image_description.foto)
 
-    images = []
+    images = load_image_tensor(image_file_paths, [100, 10])
 
-    return image
+    return images, None # none will be replaced with labels
+
+def get_image_file_paths(image_series, image_path):
+    return image_series.str.slice(1, -1)[0]
 
 def load_image_tensor(image_file_paths, target_size):
 
