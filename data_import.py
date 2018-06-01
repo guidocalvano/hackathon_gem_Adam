@@ -11,6 +11,8 @@ import os
 from pathos.multiprocessing import ProcessingPool
 from keras.utils import to_categorical
 import dill
+import logging
+
 
 def load_data_set(image_description_file_path, image_path, target_size):
     # not finished
@@ -52,7 +54,7 @@ def load_image_tensor(image_file_paths, target_size):
             standardized_ratio_array.append(standardized_ratio_image)
             is_successful[i] = True
         except Exception as e: # this should match specific errors but if I did the code would be clean and this IS a hackathon
-            print(e)
+            logging.exception(e)
 
 
     target_ratio_height_per_width = target_size[1] / target_size[0]
