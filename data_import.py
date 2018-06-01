@@ -25,7 +25,7 @@ def load_data_set(image_description_file_path, image_path, target_size):
 
     successful_description.index = range(successful_description.shape[0])
 
-    labels = successful_description.label_type_int
+    labels = successful_description.label_clean_int
 
     return images, labels # none will be replaced with labels
 
@@ -51,8 +51,8 @@ def load_image_tensor(image_file_paths, target_size):
 
             standardized_ratio_array.append(standardized_ratio_image)
             is_successful[i] = True
-        except: # this should match specific errors but if I did the code would be clean and this IS a hackathon
-            pass
+        except Exception as e: # this should match specific errors but if I did the code would be clean and this IS a hackathon
+            print(e)
 
 
     target_ratio_height_per_width = target_size[1] / target_size[0]
@@ -93,7 +93,7 @@ def parallel_load_image_tensor(image_file_paths, target_size, batch_count):
     is_successful = []
 
     for standardized_image_batch, is_successful_batch \
-            in ProcessingPool().map(load_image_tensor_task, batched_image_file_paths):
+            in ProcessingPool(processes=config.MULTI_CORE_COUNT).map(load_image_tensor_task, batched_image_file_paths):
         print("finished mapping")
         standarized_images.append(standardized_image_batch)
         is_successful.append(is_successful_batch)
