@@ -41,6 +41,8 @@ def load_image_tensor(image_file_paths, target_size):
     is_successful = np.zeros([len(image_file_paths)]).astype(bool)
 
     for i in range(image_file_paths.shape[0]):
+        if i % 150 == 0:
+            print("progress load image tensor ratio standardization: " + str(float(i) / float(image_file_paths.shape[0])))
         try:
             next_image = load_img(image_file_paths[i])
             image_array = np.array(next_image)
@@ -96,6 +98,7 @@ def standardize_resolution(image_arrays, target_size):
 
     with sess.as_default():
         for i in range(len(image_arrays)):
+            print("progress standardize resolution: " + str(float(i) / float(len(image_arrays))))
 
             original = image_arrays[i].astype('float')
             original = np.expand_dims(original, axis=0)
