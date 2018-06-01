@@ -8,18 +8,18 @@ import sys
 import config
 import math
 import os
-import pickle
-
+from pathos.multiprocessing import ProcessingPool
 from keras.utils import to_categorical
-
+import dill
 
 def load_data_set(image_description_file_path, image_path, target_size):
     # not finished
-    image_description = pd.read_csv(image_description_file_path) # this will reduce your number of examples to 10 .iloc[:10]
+    image_description = pd.read_csv(image_description_file_path).iloc[:75] # this will reduce your number of examples to 10 .iloc[:10]
 
     image_file_paths = get_image_file_paths(image_description.filename, image_path)
 
-    images, is_successful = load_image_tensor(image_file_paths, target_size)
+    # images, is_successful = load_image_tensor(image_file_paths, target_size)
+    images, is_successful = parallel_load_image_tensor(image_file_paths, target_size, config.IMAGE_PREPROCESSING_BATCH_COUNT)
 
     successful_description = image_description.iloc[is_successful]
 
@@ -56,13 +56,52 @@ def load_image_tensor(image_file_paths, target_size):
 
 
     target_ratio_height_per_width = target_size[1] / target_size[0]
+
     downsampled_image_arrays = standardize_resolution(standardized_ratio_array, target_size)
 
-    image_tensor = np.concatenate(downsampled_image_arrays)
+    image_tensor = np.array([]).reshape([0, target_size[0], target_size[1], 3])
+
+    if len(downsampled_image_arrays) > 0:
+        image_tensor = np.concatenate(downsampled_image_arrays)
 
     # return array containing ONLY successful images (without holes) and a boolean indexing vector with successful loads
     return image_tensor, is_successful
 
+
+def chunk_df(l, chunk_count):
+    chunk_size = int(l.shape[0] / chunk_count)
+
+    chunk_size = max(1, chunk_size)
+
+    return [l.iloc[i:i+chunk_size] for i in range(0, l.shape[0], chunk_size)]
+
+
+def construct_batch_arguments(image_file_paths, target_size, batch_count):
+    batched_image_file_paths = chunk_df(image_file_paths, batch_count)
+
+    return [(image_file_path_batch, target_size) for image_file_path_batch in batched_image_file_paths]
+
+
+def load_image_tensor_task(arg_tuple):
+    return load_image_tensor(arg_tuple[0], arg_tuple[1])
+
+
+def parallel_load_image_tensor(image_file_paths, target_size, batch_count):
+    batched_image_file_paths = construct_batch_arguments(image_file_paths, target_size, batch_count)
+
+    standarized_images = []
+    is_successful = []
+
+    for standardized_image_batch, is_successful_batch \
+            in ProcessingPool().map(load_image_tensor_task, batched_image_file_paths):
+        print("finished mapping")
+        standarized_images.append(standardized_image_batch)
+        is_successful.append(is_successful_batch)
+
+    standarized_images = np.concatenate(standarized_images)
+    is_successful = np.concatenate(is_successful)
+
+    return standarized_images, is_successful
 
 def standardize_image_ratio(image_array, target_ratio_height_per_width):
     (width, height, _) = image_array.shape
@@ -212,13 +251,14 @@ def default_cache_load():
     cache_file_path = config.DEFAULT_CACHE_FILE_PATH
 
     if os.path.isfile(cache_file_path):
-        res = pickle.load(open(cache_file_path, 'rb'))
+        res = dill.load(open(cache_file_path, 'rb'))
         return res
 
     ds = convert_to_categorical(import_all_data(config.DATA_DESCRIPTION_FILE, config.IMAGE_PATH, config.INPUT_SIZE), config.CLASS_COUNT)
 
-    pickle.dump(ds, open(cache_file_path, 'wb'))
+    dill.dump(ds, open(cache_file_path, 'wb'))
 
     return ds
 
-
+if __name__ == "__main__":
+    ds = default_cache_load()
