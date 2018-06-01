@@ -14,7 +14,7 @@ import dill
 
 def load_data_set(image_description_file_path, image_path, target_size):
     # not finished
-    image_description = pd.read_csv(image_description_file_path).iloc[:75] # this will reduce your number of examples to 10 .iloc[:10]
+    image_description = pd.read_csv(image_description_file_path) # this will reduce your number of examples to 10 .iloc[:10]
 
     image_file_paths = get_image_file_paths(image_description.filename, image_path)
 
