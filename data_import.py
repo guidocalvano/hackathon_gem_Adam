@@ -42,9 +42,9 @@ def load_image_tensor(image_file_paths, target_size):
 
     is_successful = np.zeros([len(image_file_paths)]).astype(bool)
 
-    for i in range(image_file_paths.shape[0]):
+    for i in range(len(image_file_paths)):
         if i % 150 == 0:
-            print("progress load image tensor ratio standardization: " + str(float(i) / float(image_file_paths.shape[0])))
+            print("progress load image tensor ratio standardization: " + str(float(i) / float(len(image_file_paths))))
         try:
             next_image = load_img(image_file_paths[i])
             image_array = np.array(next_image)
