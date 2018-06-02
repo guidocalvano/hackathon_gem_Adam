@@ -53,8 +53,13 @@ def load_image_tensor(image_file_paths, target_size):
 
             standardized_ratio_array.append(standardized_ratio_image)
             is_successful[i] = True
+        except FileNotFoundError as f:
+            logging.error(f)
         except Exception as e: # this should match specific errors but if I did the code would be clean and this IS a hackathon
-            logging.exception(e)
+            print("ExceptionClass: " + e.__class__.__name__)
+            print("info: " + e.__str__())
+            print("str(): " + str(e))
+            pass  # so I can set a break point here
 
 
     target_ratio_height_per_width = target_size[1] / target_size[0]
