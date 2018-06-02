@@ -32,7 +32,7 @@ def load_data_set(image_description_file_path, image_path, target_size):
     return images, labels # none will be replaced with labels
 
 def get_image_file_paths(image_series, image_path):
-    return image_path + image_series
+    return list(image_path + image_series)
 
 def load_image_tensor(image_file_paths, target_size):
 
@@ -76,11 +76,11 @@ def load_image_tensor(image_file_paths, target_size):
 
 
 def chunk_df(l, chunk_count):
-    chunk_size = int(l.shape[0] / chunk_count)
+    chunk_size = int(len(l) / chunk_count)
 
     chunk_size = max(1, chunk_size)
 
-    return [l.iloc[i:i+chunk_size] for i in range(0, l.shape[0], chunk_size)]
+    return [l[i:i+chunk_size] for i in range(0, len(l), chunk_size)]
 
 
 def construct_batch_arguments(image_file_paths, target_size, batch_count):
