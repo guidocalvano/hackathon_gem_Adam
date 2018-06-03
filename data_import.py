@@ -32,6 +32,7 @@ def load_data_set(image_description_file_path, image_path, target_size):
     return images, labels # none will be replaced with labels
 
 def get_image_file_paths(image_series, image_path):
+
     return list(image_path + image_series)
 
 def load_image_tensor(image_file_paths, target_size):

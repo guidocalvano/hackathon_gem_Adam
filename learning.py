@@ -15,6 +15,9 @@ from keras.layers import Reshape
 
 from keras.callbacks import EarlyStopping
 from keras.models import Model
+from sklearn.metrics import confusion_matrix
+import dill
+
 
 import config
 import data_import
@@ -22,20 +25,33 @@ import os
 import datetime
 import numpy as np
 
-def create_model(input_shape, output_count):
+def add_standard_conv_layer(model):
+    model.add(Conv2D(32, 5, border_mode='valid', activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+
+    return model
+
+def create_model(input_shape, output_count, layer_count=2):
     model = Sequential()
 
     # Step 0 downsampling
 
-    # Step 1 = Convolution
-    model.add(Conv2D(32, 5, padding='valid', activation='relu', input_shape=np.array(input_shape)))
+    for i in range(layer_count):
+        add_standard_conv_layer(model)
 
-    # Step 2 Max Pooling
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-
-    # Adding second convolutional layer
-    model.add(Conv2D(32, 5, border_mode='valid', activation='relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
+    # # Step 1 = Convolution
+    # model.add(Conv2D(32, 5, padding='valid', activation='relu', input_shape=np.array(input_shape)))
+    #
+    # # Step 2 Max Pooling
+    # model.add(MaxPooling2D(pool_size=(2, 2)))
+    #
+    # # Adding second convolutional layer
+    # model.add(Conv2D(32, 5, border_mode='valid', activation='relu'))
+    # model.add(MaxPooling2D(pool_size=(2, 2)))
+    #
+    # # Adding third convolutional layer
+    # model.add(Conv2D(32, 5, border_mode='valid', activation='relu'))
+    # model.add(MaxPooling2D(pool_size=(2, 2)))
 
     # Step 3 Flattening
     model.add(Flatten())
@@ -47,7 +63,7 @@ def create_model(input_shape, output_count):
 
     return model
 
-def create_model_with_input_reconstruction(input_shape, output_count):
+def create_2_layer_model_with_input_reconstruction(input_shape, output_count):
     inputs = Input(shape=input_shape)
     layer_1 = Conv2D(32, 5, padding='valid', activation='relu')(inputs)
     layer_2 = MaxPooling2D(pool_size=(2, 2))(layer_1)
@@ -66,6 +82,165 @@ def create_model_with_input_reconstruction(input_shape, output_count):
 
     return model
 
+def create_5_layer_model_with_input_reconstruction(input_shape, output_count):
+    inputs = Input(shape=input_shape)
+    layer = Conv2D(32, 5, padding='valid', activation='relu')(inputs)
+    layer = MaxPooling2D(pool_size=(2, 2))(layer)
+    layer = Conv2D(32, 5, border_mode='valid', activation='relu')(layer)
+    layer = MaxPooling2D(pool_size=(2, 2))(layer)
+    layer = Conv2D(32, 5, border_mode='valid', activation='relu')(layer)
+    layer = MaxPooling2D(pool_size=(2, 2))(layer)
+    layer = Conv2D(32, 5, border_mode='valid', activation='relu')(layer)
+    layer = MaxPooling2D(pool_size=(2, 2))(layer)
+    layer = Conv2D(32, 5, border_mode='valid', activation='relu')(layer)
+    layer = MaxPooling2D(pool_size=(2, 2))(layer)
+    layer = Flatten()(layer)
+    outputs = Dense(units=output_count, activation='softmax')(layer)
+
+    reconstruction_1 = Dense(32, activation='relu')(layer)
+    reconstruction_2 = Dense(32, activation='relu')(reconstruction_1)
+    reconstruction_3 = Dense(np.product(input_shape), activation='sigmoid')(reconstruction_2)
+
+    final_reconstruction = Reshape(input_shape)(reconstruction_3)
+
+    model = Model(inputs=inputs, outputs=[outputs, final_reconstruction])
+
+    model.compile(optimizer='adam', loss=['categorical_crossentropy', 'binary_crossentropy'], metrics=['accuracy'])
+
+    return model
+
+def run_n_layers(ds, layer_count):
+
+    model = create_model(ds["training"][0].shape[1:], config.CLASS_COUNT)
+
+    early_stopping = EarlyStopping(monitor='val_acc',
+                                  patience=0,
+                                  verbose=0, mode='auto')
+
+    results = model.fit(ds["training"][0],
+                        ds["training"][1],
+                        validation_data=ds["validation"],
+                        epochs=1000,
+                        batch_size=6539,
+                        callbacks=[early_stopping])
+
+    accuracy = get_accuracy_from_results(results)
+    one_hot_predictions = model.predict(ds["validation"][0])
+    predictions = np.argmax(one_hot_predictions, axis=1)
+
+    cm = confusion_matrix(np.argmax(ds["validation"][1], axis=1), predictions)
+
+    results = {
+        "validation_confusion": cm,
+        "validation_accuracy": accuracy,
+        "history": results.history
+    }
+
+    return results
+
+def run_2_layers_with_reconstruction(ds):
+    model = create_2_layer_model_with_input_reconstruction(ds["training"][0].shape[1:], config.CLASS_COUNT)
+
+    early_stopping = EarlyStopping(monitor='val_dense_1_acc',
+                                  patience=0,
+                                  verbose=0, mode='auto')
+
+    results = model.fit(ds["training"][0],
+                        [ds["training"][1], ds["training"][0]],
+                        validation_data=(ds["validation"][0], [ds["validation"][1], ds["validation"][0]]),
+                        epochs=1000,
+                        batch_size=6539,
+                        callbacks=[early_stopping])
+
+    accuracy = results.history["dense_1_acc"][-1]
+
+    one_hot_predictions = model.predict(ds["validation"][0])
+    predictions = np.argmax(one_hot_predictions, axis=1)
+
+    cm = confusion_matrix(np.argmax(ds["validation"][1], axis=1), predictions)
+
+    results = {
+        "validation_confusion": cm,
+        "validation_accuracy": accuracy,
+        "history": results.history
+    }
+
+    return results
+
+def run_5_layers_with_reconstruction(ds):
+    model = create_2_layer_model_with_input_reconstruction(ds["training"][0].shape[1:], config.CLASS_COUNT)
+
+    early_stopping = EarlyStopping(monitor='val_dense_1_acc',
+                                  patience=0,
+                                  verbose=0, mode='auto')
+
+    results = model.fit(ds["training"][0],
+                        [ds["training"][1], ds["training"][0]],
+                        validation_data=(ds["validation"][0], [ds["validation"][1], ds["validation"][0]]),
+                        epochs=1000,
+                        batch_size=6539,
+                        callbacks=[early_stopping])
+
+    accuracy = results.history["dense_1_acc"][-1]
+
+    one_hot_predictions = model.predict(ds["validation"][0])
+    predictions = np.argmax(one_hot_predictions, axis=1)
+
+    cm = confusion_matrix(np.argmax(ds["validation"][1], axis=1), predictions)
+
+    results = {
+        "validation_confusion": cm,
+        "validation_accuracy": accuracy,
+        "history": results.history
+    }
+
+    return results
+
+
+def run_experiments():
+    ds = data_import.default_cache_load()
+
+    try:
+        two_layer = run_n_layers(ds, 2)
+    except Exception as e:
+        two_layer = e
+
+    try:
+        three_layer = run_n_layers(ds, 3)
+    except Exception as e:
+        three_layer = e
+
+    try:
+        four_layer = run_n_layers(ds, 4)
+    except Exception as e:
+        four_layer = e
+
+    try:
+        five_layer = run_n_layers(ds, 5)
+    except Exception as e:
+        five_layer = e
+
+    try:
+        two_layer_reconstruction = run_2_layers_with_reconstruction(ds)
+    except Exception as e:
+        two_layer_reconstruction = e
+
+    try:
+        five_layer_reconstruction = run_5_layers_with_reconstruction(ds)
+    except Exception as e:
+        five_layer_reconstruction = e
+
+    results = {
+        "two_layer": two_layer,
+        "three_layer": three_layer,
+        "four_layer": four_layer,
+        "five_layer": five_layer,
+        "two_layer_reconstruction": two_layer_reconstruction,
+        "five_layer_reconstruction": five_layer_reconstruction
+    }
+
+    dill.dump(results, open(results_file_path, 'wb'))
+
 
 def run():
     ds = data_import.default_cache_load()
@@ -80,7 +255,7 @@ def run():
                         ds["training"][1],
                         validation_data=ds["validation"],
                         epochs=10,
-                        batch_size=32,
+                        batch_size=320,
                         callbacks=[early_stopping])
 
     accuracy = get_accuracy_from_results(results)
@@ -97,7 +272,7 @@ def run():
 def run2():
     ds = data_import.default_cache_load()
 
-    model = create_model_with_input_reconstruction(ds["training"][0].shape[1:], config.CLASS_COUNT)
+    model = create_2_layer_model_with_input_reconstruction(ds["training"][0].shape[1:], config.CLASS_COUNT)
 
     early_stopping = EarlyStopping(monitor='val_dense_1_acc',
                                   patience=0,
@@ -128,4 +303,4 @@ def get_accuracy_from_results(results):
 
     return accuracy
 
-run()
+run_experiments()
