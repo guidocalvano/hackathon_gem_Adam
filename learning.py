@@ -24,6 +24,8 @@ import data_import
 import os
 import datetime
 import numpy as np
+import logging
+
 
 def add_standard_conv_layer(model):
     model.add(Conv2D(32, 5, border_mode='valid', activation='relu'))
@@ -34,9 +36,10 @@ def add_standard_conv_layer(model):
 def create_model(input_shape, output_count, layer_count=2):
     model = Sequential()
 
-    # Step 0 downsampling
+    model.add(Conv2D(32, 5, padding='valid', activation='relu', input_shape=np.array(input_shape)))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
 
-    for i in range(layer_count):
+    for i in range(layer_count - 1):
         add_standard_conv_layer(model)
 
     # # Step 1 = Convolution
@@ -70,7 +73,7 @@ def create_2_layer_model_with_input_reconstruction(input_shape, output_count):
     layer_3 = Conv2D(32, 5, border_mode='valid', activation='relu')(layer_2)
     layer_4 = MaxPooling2D(pool_size=(2, 2))(layer_3)
     layer_5 = Flatten()(layer_4)
-    outputs = Dense(units=output_count, activation='softmax')(layer_5)
+    outputs = Dense(units=output_count, activation='softmax', name='prediction')(layer_5)
 
     reconstruction_1 = Dense(32, activation='relu')(layer_5)
     reconstruction_2 = Dense(np.product(input_shape), activation='sigmoid')(reconstruction_1)
@@ -95,7 +98,7 @@ def create_5_layer_model_with_input_reconstruction(input_shape, output_count):
     layer = Conv2D(32, 5, border_mode='valid', activation='relu')(layer)
     layer = MaxPooling2D(pool_size=(2, 2))(layer)
     layer = Flatten()(layer)
-    outputs = Dense(units=output_count, activation='softmax')(layer)
+    outputs = Dense(units=output_count, activation='softmax', name='prediction')(layer)
 
     reconstruction_1 = Dense(32, activation='relu')(layer)
     reconstruction_2 = Dense(32, activation='relu')(reconstruction_1)
@@ -121,7 +124,7 @@ def run_n_layers(ds, layer_count):
                         ds["training"][1],
                         validation_data=ds["validation"],
                         epochs=1000,
-                        batch_size=6539,
+                        batch_size=1000,
                         callbacks=[early_stopping])
 
     accuracy = get_accuracy_from_results(results)
@@ -141,7 +144,7 @@ def run_n_layers(ds, layer_count):
 def run_2_layers_with_reconstruction(ds):
     model = create_2_layer_model_with_input_reconstruction(ds["training"][0].shape[1:], config.CLASS_COUNT)
 
-    early_stopping = EarlyStopping(monitor='val_dense_1_acc',
+    early_stopping = EarlyStopping(monitor='val_prediction_acc',
                                   patience=0,
                                   verbose=0, mode='auto')
 
@@ -149,12 +152,12 @@ def run_2_layers_with_reconstruction(ds):
                         [ds["training"][1], ds["training"][0]],
                         validation_data=(ds["validation"][0], [ds["validation"][1], ds["validation"][0]]),
                         epochs=1000,
-                        batch_size=6539,
+                        batch_size=1000,
                         callbacks=[early_stopping])
 
-    accuracy = results.history["dense_1_acc"][-1]
+    accuracy = results.history["val_prediction_acc"][-1]
 
-    one_hot_predictions = model.predict(ds["validation"][0])
+    one_hot_predictions = model.predict(ds["validation"][0])[0]
     predictions = np.argmax(one_hot_predictions, axis=1)
 
     cm = confusion_matrix(np.argmax(ds["validation"][1], axis=1), predictions)
@@ -170,7 +173,7 @@ def run_2_layers_with_reconstruction(ds):
 def run_5_layers_with_reconstruction(ds):
     model = create_2_layer_model_with_input_reconstruction(ds["training"][0].shape[1:], config.CLASS_COUNT)
 
-    early_stopping = EarlyStopping(monitor='val_dense_1_acc',
+    early_stopping = EarlyStopping(monitor='val_prediction_acc',
                                   patience=0,
                                   verbose=0, mode='auto')
 
@@ -178,12 +181,12 @@ def run_5_layers_with_reconstruction(ds):
                         [ds["training"][1], ds["training"][0]],
                         validation_data=(ds["validation"][0], [ds["validation"][1], ds["validation"][0]]),
                         epochs=1000,
-                        batch_size=6539,
+                        batch_size=1000,
                         callbacks=[early_stopping])
 
-    accuracy = results.history["dense_1_acc"][-1]
+    accuracy = results.history["val_prediction_acc"][-1]
 
-    one_hot_predictions = model.predict(ds["validation"][0])
+    one_hot_predictions = model.predict(ds["validation"][0])[0]
     predictions = np.argmax(one_hot_predictions, axis=1)
 
     cm = confusion_matrix(np.argmax(ds["validation"][1], axis=1), predictions)
@@ -201,34 +204,40 @@ def run_experiments():
     ds = data_import.default_cache_load()
 
     try:
-        two_layer = run_n_layers(ds, 2)
-    except Exception as e:
-        two_layer = e
-
-    try:
-        three_layer = run_n_layers(ds, 3)
-    except Exception as e:
-        three_layer = e
-
-    try:
-        four_layer = run_n_layers(ds, 4)
-    except Exception as e:
-        four_layer = e
-
-    try:
-        five_layer = run_n_layers(ds, 5)
-    except Exception as e:
-        five_layer = e
-
-    try:
         two_layer_reconstruction = run_2_layers_with_reconstruction(ds)
     except Exception as e:
-        two_layer_reconstruction = e
+        two_layer_reconstruction = str(e)
+        logging.exception(e)
 
     try:
         five_layer_reconstruction = run_5_layers_with_reconstruction(ds)
     except Exception as e:
-        five_layer_reconstruction = e
+        five_layer_reconstruction = str(e)
+        logging.exception(e)
+
+    try:
+        two_layer = run_n_layers(ds, 2)
+    except Exception as e:
+        two_layer = str(e)
+        logging.exception(e)
+
+    try:
+        three_layer = run_n_layers(ds, 3)
+    except Exception as e:
+        three_layer = str(e)
+        logging.exception(e)
+
+    try:
+        four_layer = run_n_layers(ds, 4)
+    except Exception as e:
+        four_layer = str(e)
+        logging.exception(e)
+
+    try:
+        five_layer = run_n_layers(ds, 5)
+    except Exception as e:
+        five_layer = str(e)
+        logging.exception(e)
 
     results = {
         "two_layer": two_layer,
