@@ -239,7 +239,7 @@ def run_experiments():
         "five_layer_reconstruction": five_layer_reconstruction
     }
 
-    dill.dump(results, open(results_file_path, 'wb'))
+    dill.dump(results, open(config.RESULTS_FILEPATH, 'wb'))
 
 
 def run():
