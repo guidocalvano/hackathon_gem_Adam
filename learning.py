@@ -116,6 +116,7 @@ def run_n_layers(ds, layer_count):
 
     model = create_model(ds["training"][0].shape[1:], config.CLASS_COUNT)
 
+    # @TODO check if val_acc is indeed the name assigned to the node that should be monitored
     early_stopping = EarlyStopping(monitor='val_acc',
                                   patience=0,
                                   verbose=0, mode='auto')
