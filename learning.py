@@ -33,6 +33,7 @@ def add_standard_conv_layer(model):
 
     return model
 
+
 def create_model(input_shape, output_count, layer_count=2):
     model = Sequential()
 
@@ -66,6 +67,7 @@ def create_model(input_shape, output_count, layer_count=2):
 
     return model
 
+
 def create_2_layer_model_with_input_reconstruction(input_shape, output_count):
     inputs = Input(shape=input_shape)
     layer_1 = Conv2D(32, 5, padding='valid', activation='relu')(inputs)
@@ -84,6 +86,7 @@ def create_2_layer_model_with_input_reconstruction(input_shape, output_count):
     model.compile(optimizer='adam', loss=['categorical_crossentropy', 'binary_crossentropy'], metrics=['accuracy'])
 
     return model
+
 
 def create_5_layer_model_with_input_reconstruction(input_shape, output_count):
     inputs = Input(shape=input_shape)
@@ -170,6 +173,7 @@ def run_2_layers_with_reconstruction(ds):
     }
 
     return results
+
 
 def run_5_layers_with_reconstruction(ds):
     model = create_2_layer_model_with_input_reconstruction(ds["training"][0].shape[1:], config.CLASS_COUNT)
