@@ -27,9 +27,12 @@ def load_data_set(image_description_file_path, image_path, target_size):
 
     successful_image_description.index = range(successful_image_description.shape[0])
 
-    labels = successful_image_description[["label_clean_int", "label_type_int", "label_crow_score_int"]]
+    label_columns = ["label_clean_int", "label_type_int", "label_crow_score_int"]
+    labels = successful_image_description[label_columns]
 
-    return images, labels
+    meta = successful_image_description.loc[:, np.logical_not(np.isin(successful_image_description.columns, label_columns))]
+
+    return images, labels, meta
 
 
 def get_image_file_paths(image_series, image_path):
@@ -193,7 +196,7 @@ def split_data_set(full_set, split_ratios):
         "test": (examples[split_indices["test"]], index_pandas_df(labels, split_indices["test"]))
     }
     print("split data set done")
-    return split_data_set
+    return split_data_set, split_indices
 
 def index_pandas_df(df, indices):
     df = df.iloc[indices]
@@ -242,9 +245,9 @@ def stratified_split_indices_from(labels, split_ratios):
 
 def import_all_data(data_description_file, image_path, target_size):
 
-    image_tensor, labels = load_data_set(data_description_file, image_path, target_size)
+    image_tensor, labels, meta = load_data_set(data_description_file, image_path, target_size)
 
-    split = split_data_set((image_tensor, labels), {
+    split, split_indices = split_data_set((image_tensor, labels), {
         "training": .5,
         "validation": .25,
         "test": .25
@@ -256,10 +259,17 @@ def import_all_data(data_description_file, image_path, target_size):
     normalized_test_examples = normalize_test_images(split["test"][0], mean, standard_deviation)
     print("normalize split data sets end")
 
+    split_meta = {
+        "training": index_pandas_df(meta, split_indices["training"]),
+        "validation": index_pandas_df(meta, split_indices["validation"]),
+        "test": index_pandas_df(meta, split_indices["test"])
+    }
+
     return {
         "training": (normalized_training_examples, split["training"][1]),
         "validation": (normalized_validation_examples, split["validation"][1]),
-        "test": (normalized_test_examples, split["test"][1])
+        "test": (normalized_test_examples, split["test"][1]),
+        "meta": split_meta
     }
 
 
@@ -270,8 +280,7 @@ def convert_to_categorical(ds, label_type_count):
 
     return result
 
-def default_cache_load():
-    cache_file_path = config.DEFAULT_CACHE_FILE_PATH
+def default_cache_load(cache_file_path = config.DEFAULT_CACHE_FILE_PATH):
 
     if os.path.isfile(cache_file_path):
         res = dill.load(open(cache_file_path, 'rb'))
