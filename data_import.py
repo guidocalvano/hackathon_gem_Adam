@@ -23,17 +23,19 @@ def load_data_set(image_description_file_path, image_path, target_size):
     # images, is_successful = load_image_tensor(image_file_paths, target_size)
     images, is_successful = parallel_load_image_tensor(image_file_paths, target_size, config.IMAGE_PREPROCESSING_BATCH_COUNT)
 
-    successful_description = image_description.iloc[is_successful]
+    successful_image_description = image_description.iloc[is_successful]
 
-    successful_description.index = range(successful_description.shape[0])
+    successful_image_description.index = range(successful_image_description.shape[0])
 
-    labels = successful_description.label_clean_int
+    labels = successful_image_description[["label_clean_int", "label_type_int", "label_crow_score_int"]]
 
-    return images, labels # none will be replaced with labels
+    return images, labels
+
 
 def get_image_file_paths(image_series, image_path):
 
     return list(image_path + image_series)
+
 
 def load_image_tensor(image_file_paths, target_size):
 
@@ -169,6 +171,7 @@ def normalize_data(data): # does not take into account night or day
 
     return standardized_data, mean, standard_deviation
 
+
 def normalize_test_images(data, mean, standard_deviation):
     centered_data = data - mean
 
@@ -176,19 +179,27 @@ def normalize_test_images(data, mean, standard_deviation):
 
     return standardized_data
 
+
 def split_data_set(full_set, split_ratios):
+    print("split data set start")
 
     examples, labels = full_set
 
-    split_indices = stratified_split_indices_from(labels, split_ratios)
+    split_indices = stratified_split_indices_from(labels.label_type_int, split_ratios)
 
     split_data_set = {
-        "training": (examples[split_indices["training"]], labels[split_indices["training"]]),
-        "validation": (examples[split_indices["validation"]], labels[split_indices["validation"]]),
-        "test": (examples[split_indices["test"]], labels[split_indices["test"]])
+        "training": (examples[split_indices["training"]], index_pandas_df(labels, split_indices["training"])),
+        "validation": (examples[split_indices["validation"]], index_pandas_df(labels, split_indices["validation"])),
+        "test": (examples[split_indices["test"]], index_pandas_df(labels, split_indices["test"]))
     }
-
+    print("split data set done")
     return split_data_set
+
+def index_pandas_df(df, indices):
+    df = df.iloc[indices]
+    df.index = range(len(df))
+
+    return df
 
 def stratified_split_indices_from(labels, split_ratios):
     training_ratio = split_ratios["training"]
@@ -228,6 +239,7 @@ def stratified_split_indices_from(labels, split_ratios):
         "test": test_indices
     }
 
+
 def import_all_data(data_description_file, image_path, target_size):
 
     image_tensor, labels = load_data_set(data_description_file, image_path, target_size)
@@ -238,15 +250,18 @@ def import_all_data(data_description_file, image_path, target_size):
         "test": .25
     })
 
+    print("normalize split data sets start")
     normalized_training_examples, mean, standard_deviation = normalize_data(split["training"][0])
     normalized_validation_examples = normalize_test_images(split["validation"][0], mean, standard_deviation)
     normalized_test_examples = normalize_test_images(split["test"][0], mean, standard_deviation)
+    print("normalize split data sets end")
 
     return {
         "training": (normalized_training_examples, split["training"][1]),
         "validation": (normalized_validation_examples, split["validation"][1]),
         "test": (normalized_test_examples, split["test"][1])
     }
+
 
 def convert_to_categorical(ds, label_type_count):
     result = {}
@@ -262,11 +277,16 @@ def default_cache_load():
         res = dill.load(open(cache_file_path, 'rb'))
         return res
 
-    ds = convert_to_categorical(import_all_data(config.DATA_DESCRIPTION_FILE, config.IMAGE_PATH, config.INPUT_SIZE), config.CLASS_COUNT)
+    ds = import_all_data(config.DATA_DESCRIPTION_FILE, config.IMAGE_PATH, config.INPUT_SIZE)
+
+    print("dump dataset to file start")
 
     dill.dump(ds, open(cache_file_path, 'wb'))
+
+    print("dump dataset to file done")
 
     return ds
 
 if __name__ == "__main__":
     ds = default_cache_load()
+    pass # for setting breakpoints

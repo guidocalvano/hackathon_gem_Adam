@@ -1,4 +1,4 @@
-,filename,label_clean_int,label_crow_score_str,label_type_str,label_type_int,label_score_score_int
+,filename,label_clean_int,label_crow_score_str,label_type_str,label_type_int,label_crow_score_int
 0,mdc_photo_cdv_photo_003_1521750452895.jpg,0,A+,gemengd,4,1
 1,mdc_photo_cdv_photo_006_1521750658737.jpg,0,B,plastic,0,4
 2,mdc_photo_cdv_photo_008_1521750851184.jpg,0,D,gemengd,4,2
