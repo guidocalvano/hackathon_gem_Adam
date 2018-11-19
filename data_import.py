@@ -8,10 +8,11 @@ import sys
 import config
 import math
 import os
-from pathos.multiprocessing import ProcessingPool
+from pebble import ProcessPool
 from keras.utils import to_categorical
 import dill
 import logging
+from concurrent.futures import TimeoutError
 
 
 def load_data_set(image_description_file_path, image_path, target_size):
@@ -47,11 +48,12 @@ def load_image_tensor(image_file_paths, target_size):
     standardized_ratio_array = []
 
     is_successful = np.zeros([len(image_file_paths)]).astype(bool)
-
+    exception_dictionary = {}
     for i in range(len(image_file_paths)):
         if i % 150 == 0:
             print("progress load image tensor ratio standardization: " + str(float(i) / float(len(image_file_paths))))
         try:
+            print("image_file_paths[i]" + image_file_paths[i])
             next_image = load_img(image_file_paths[i])
             image_array = np.array(next_image)
 
@@ -59,14 +61,23 @@ def load_image_tensor(image_file_paths, target_size):
 
             standardized_ratio_array.append(standardized_ratio_image)
             is_successful[i] = True
-        except FileNotFoundError as f:
-            logging.error(f)
-        except Exception as e: # this should match specific errors but if I did the code would be clean and this IS a hackathon
-            print("ExceptionClass: " + e.__class__.__name__)
-            print("info: " + e.__str__())
-            print("str(): " + str(e))
+
+        except Exception as e:
+
+            if e.__class__.__name__ not in exception_dictionary:
+                exception_dictionary[e.__class__.__name__] = {"count": 0}
+
+            exception_dictionary[e.__class__.__name__]["description"] = e.__str__() + " " + str(e)
+            exception_dictionary[e.__class__.__name__]["count"] += 1
             pass  # so I can set a break point here
 
+    print("ERRORS BY FREQUENCY:")
+    for class_name, exception_data in sorted(exception_dictionary.items(), key=lambda v: v[1]["count"]):
+        description = exception_data["description"]
+        count = exception_data["count"]
+        print(class_name)
+        print(description)
+        print("occurance count: " + str(count))
 
     target_ratio_height_per_width = target_size[1] / target_size[0]
 
@@ -102,14 +113,33 @@ def load_image_tensor_task(arg_tuple):
 def parallel_load_image_tensor(image_file_paths, target_size, batch_count):
     batched_image_file_paths = construct_batch_arguments(image_file_paths, target_size, batch_count)
 
-    standarized_images = []
+    standarized_images = [np.array([]).reshape([0, target_size[0], target_size[1], 3])]
     is_successful = []
 
-    for standardized_image_batch, is_successful_batch \
-            in ProcessingPool(processes=config.MULTI_CORE_COUNT).map(load_image_tensor_task, batched_image_file_paths):
-        print("finished mapping")
-        standarized_images.append(standardized_image_batch)
-        is_successful.append(is_successful_batch)
+    with ProcessPool(max_workers=config.MULTI_CORE_COUNT) as pool:
+        future = pool.map(load_image_tensor_task, batched_image_file_paths, timeout=config.TIMEOUT_SECS, chunksize=config.CHUNK_SIZE)
+
+        iterator = future.result()
+        i = 0
+        while True:
+            try:
+                standardized_image_batch, is_successful_batch = next(iterator)
+                standarized_images.append(standardized_image_batch)
+                is_successful.append(is_successful_batch)
+            except StopIteration:
+                break
+            except TimeoutError as error:
+
+                is_successful.append(np.zeros([len(batched_image_file_paths[i][0])]).astype(bool))
+                print("function took longer than %d seconds" % error.args[1])
+
+            print("RESULTS PROCESSED = " + str(i) + " / " + str(len(batched_image_file_paths) / config.CHUNK_SIZE))
+
+            i = i + 1
+
+    print("finished mapping")
+
+    print("images retrieved = " + str(len(standarized_images)))
 
     standarized_images = np.concatenate(standarized_images)
     is_successful = np.concatenate(is_successful)
@@ -150,7 +180,6 @@ def standardize_resolution(image_arrays, target_size):
 
     with sess.as_default():
         for i in range(len(image_arrays)):
-            print("progress standardize resolution: " + str(float(i) / float(len(image_arrays))))
 
             original = image_arrays[i].astype('float')
             original = np.expand_dims(original, axis=0)
