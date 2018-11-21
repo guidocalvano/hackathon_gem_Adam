@@ -1,0 +1,7 @@
+,filename,label_clean_int,label_crow_score_str,label_type_str,label_type_int,label_crow_score_int
+0,high.jpg,0,A,gemengd,7,0
+1,wide.jpg,1,B,plastic,1,1
+2,bigSquare.jpg,0,C,gemengd,7,2
+3,smallSquare.jpg,1,D,gemengd,7,3
+4,doesNotExist.jpg,1,D,plastic,1,4
+5,exact.jpg,0,E,gemengd,7,5
