@@ -14,16 +14,32 @@ class DataImporter:
 
     # file management
 
+    def convert_to_standard_resolution(self, source_path, sink_path, output_image_dimensions, loading_config):
+        if not os.path.isdir(sink_path): os.makedirs(sink_path)
+
+        target_images = list(filter(lambda name: name.endswith('.jpg') and (not name.startswith('.')), os.listdir(source_path)))
+
+        source_image_file_paths = list(map(lambda file_name: os.path.join(source_path, file_name), target_images))
+
+        standardized_images, is_successful = self.parallel_load_image_tensor(source_image_file_paths, output_image_dimensions, loading_config)
+
+        successful_target_images = list(compress(target_images, is_successful))
+
+        sink_image_file_paths = list(map(lambda file_name: os.path.join(sink_path, file_name), successful_target_images))
+
+        self.save_image_tensors(sink_image_file_paths, standardized_images)
+
+
     @staticmethod
-    def load_from_cache(config):
-        if os.path.isfile(config["cache_file_path"]):
-            all_data = dill.load(open(config["cache_file_path"], 'rb'))
+    def load_from_cache(cache_file_path, data_description_file_path, standardized_photos_file_path):
+        if os.path.isfile(cache_file_path):
+            all_data = dill.load(open(cache_file_path, 'rb'))
             return all_data
         ds = DataImporter()
 
-        all_data = ds.import_all_data(config["data_description_file_path"], config["image_path"])
+        all_data = ds.import_all_data(data_description_file_path, standardized_photos_file_path)
 
-        dill.dump(all_data, open(config["cache_file_path"], 'wb'))
+        dill.dump(all_data, open(cache_file_path, 'wb'))
 
         return all_data
 
@@ -168,21 +184,6 @@ class DataImporter:
     def save_image_tensors(self, image_file_paths, image_array_list):
         for i in range(len(image_array_list)):
             scipy.misc.toimage(image_array_list[i], cmin=0.0, cmax=50000).save(image_file_paths[i])
-
-    def convert_to_standard_resolution(self, source_path, sink_path, output_image_dimensions, loading_config):
-        if not os.path.isdir(sink_path): os.makedirs(sink_path)
-
-        target_images = list(filter(lambda name: name.endswith('.jpg') and (not name.startswith('.')), os.listdir(source_path)))
-
-        source_image_file_paths = list(map(lambda file_name: os.path.join(source_path, file_name), target_images))
-
-        standardized_images, is_successful = self.parallel_load_image_tensor(source_image_file_paths, output_image_dimensions, loading_config)
-
-        successful_target_images = list(compress(target_images, is_successful))
-
-        sink_image_file_paths = list(map(lambda file_name: os.path.join(sink_path, file_name), successful_target_images))
-
-        self.save_image_tensors(sink_image_file_paths, standardized_images)
 
     def parallel_load_image_tensor(self, image_file_paths, output_image_dimensions, loading_config):
 
