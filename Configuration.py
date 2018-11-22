@@ -25,7 +25,7 @@ class Configuration:
         self.config_name_arg_separator = '#'
 
     def parseArguments(self, args=None):
-        args = args if args is not None else sys.argv
+        args = args if args is not None else sys.argv[2:]
 
         if len(args) > 1:
             self.config_name = self.config_name_arg_separator.join([str(value) for value in args])
@@ -34,20 +34,20 @@ class Configuration:
 
         parser = argparse.ArgumentParser(add_help=False)
 
-        parser.add_argument('--help', '-h', action='store_true')
+        # parser.add_argument('--help', '-h', action='store_true')
 
         for path in pathToType.keys():
             parser.add_argument('--' + path, type=pathToType[path])
 
         parsed = parser.parse_args(args)
 
-        must_help = parsed.help
-
-        if must_help:
-            print(open(self.filePath, 'r').read())
-            exit()
-        else:
-            del parsed.help
+        # must_help = parsed.help
+        #
+        # if must_help:
+        #     print(open(self.filePath, 'r').read())
+        #     exit()
+        # else:
+        #     del parsed.help
 
         self.apply_arguments(vars(parsed))
 

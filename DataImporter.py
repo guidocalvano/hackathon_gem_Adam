@@ -1,11 +1,13 @@
 import os
-import dill
+import pickle
 import pandas as pd
 import numpy as np
 from pebble import ProcessPool
-from keras.preprocessing.image import load_img
+# from keras.preprocessing.image import load_img
+import imageio
 import tensorflow as tf
 import sys
+import scipy
 import scipy.misc
 from itertools import compress
 
@@ -33,13 +35,13 @@ class DataImporter:
     @staticmethod
     def load_from_cache(cache_file_path, data_description_file_path, standardized_photos_file_path):
         if os.path.isfile(cache_file_path):
-            all_data = dill.load(open(cache_file_path, 'rb'))
+            all_data = pickle.load(open(cache_file_path, 'rb'))
             return all_data
-        ds = DataImporter()
+        di = DataImporter()
 
-        all_data = ds.import_all_data(data_description_file_path, standardized_photos_file_path)
+        all_data = di.import_all_data(data_description_file_path, standardized_photos_file_path)
 
-        dill.dump(all_data, open(cache_file_path, 'wb'))
+        pickle.dump(all_data, open(cache_file_path, 'wb'), protocol=-1)
 
         return all_data
 
@@ -171,8 +173,8 @@ class DataImporter:
 
         for image_file_path in image_file_paths:
             try:
-                next_image = load_img(image_file_path)
-                image_array = np.expand_dims(np.array(next_image), 0)
+                next_image = imageio.imread(image_file_path)
+                image_array = np.expand_dims(next_image, 0)
 
                 image_array_list.append(image_array)
                 is_successful_list.append(True)
@@ -183,7 +185,7 @@ class DataImporter:
 
     def save_image_tensors(self, image_file_paths, image_array_list):
         for i in range(len(image_array_list)):
-            scipy.misc.toimage(image_array_list[i], cmin=0.0, cmax=50000).save(image_file_paths[i])
+            scipy.misc.toimage(image_array_list[i], cmin=0.0, cmax=255).save(image_file_paths[i])
 
     def parallel_load_image_tensor(self, image_file_paths, output_image_dimensions, loading_config):
 
@@ -201,16 +203,34 @@ class DataImporter:
             while True:
                 try:
                     standardized_image, is_successful = next(iterator)
+
+                    if not is_successful:
+                        print("returned unsuccessfully")
+                        raise Exception("result returned false")
+
+                    if standardized_image is None:
+                        raise Exception("No image returned")
+
+                    if standardized_image.shape[1:3] != (output_image_dimensions[0], output_image_dimensions[1]):
+                         raise Exception("dimension mismatch")
+
+                    if standardized_image.shape[3] != 3:
+                         raise Exception("not RGB image")
+
                     standarized_images.append(standardized_image)
                     is_successful_array.append(is_successful)
                 except StopIteration:
                     break
-                except TimeoutError as error:
-
+                except Exception as e:
+                    print("exception")
+                    print(e)
+                    print(image_file_paths[i])
+                    if (standardized_image is not None) and hasattr(standardized_image, 'shape'):
+                        print("target dimensions: " + json.stringify(output_image_dimensions))
+                        print("actual dimensions: " + json.stringify(standardized_image.shape))
                     is_successful_array.append(False)
-                    print("function took longer than %d seconds" % error.args[1])
 
-                print("RESULTS PROCESSED = " + str(i) + " / " + str(len(list(image_file_paths)) / loading_config["chunk_size"]))
+                print("RESULTS PROCESSED = " + str(i + 1) + " / " + str(len(list(image_file_paths))))
 
                 i = i + 1
 
@@ -236,8 +256,7 @@ class DataImporter:
         standardized_ratio_array = []
 
         try:
-            next_image = load_img(image_file_path)
-            image_array = np.array(next_image)
+            image_array = imageio.imread(image_file_path)
 
             standardized_ratio_image = self.standardize_image_ratio(image_array, target_ratio)
 

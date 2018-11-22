@@ -15,6 +15,7 @@ class TestDataImporter(unittest.TestCase):
 
         self.photos_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources', 'dataImport', 'photos')
         self.unstandardized_photos_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources', 'dataImport', 'unstandardized_photos')
+        self.unstandardized_live_photos_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources', 'dataImport', 'unstandardized_live_photos')
 
         self.edge_case_photos_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources', 'dataImport', 'edgeCasePhotos')
         self.fixed_size_edge_case_photos_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources', 'dataImport', 'fixed_size_edge_case_photos')
@@ -25,6 +26,7 @@ class TestDataImporter(unittest.TestCase):
 
 
         self.test_photos_csv_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources', 'dataImport', 'test_photos.csv')
+        self.test_live_photos_csv_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources', 'dataImport', 'test_live_photos.csv')
         self.reduced_test_photos_csv_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources', 'dataImport', 'reduced_test_photos.csv')
 
         self.dataImporter = DataImporter()
@@ -48,6 +50,27 @@ class TestDataImporter(unittest.TestCase):
 
         if os.path.isfile(self.cache_file_path):
             os.remove(self.cache_file_path)
+
+    # live data
+    def test_live_data(self):
+        self.dataImporter.convert_to_standard_resolution(
+            self.unstandardized_live_photos_path,
+            self.photos_path,
+            [152, 114],
+            {
+                "multi_core_count": 2,
+                "timeout_secs": 100,
+                "chunk_size": 2
+            }
+        )
+
+        data_set_dictionary = self.dataImporter.load_from_cache(
+            self.cache_file_path,
+            self.test_live_photos_csv_file_path,
+            self.photos_path
+        )
+
+        self.assertTrue(data_set_dictionary is not None)
 
     # file management
     def test_load_from_cache(self):
@@ -360,3 +383,5 @@ class TestDataImporter(unittest.TestCase):
         file_paths = self.dataImporter.get_image_file_paths(series, 'y/')
 
         self.assertTrue(file_paths == ['y/A', 'y/B', 'y/C', 'y/D', 'y/D', 'y/E'])
+
+

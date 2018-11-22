@@ -1,6 +1,6 @@
 {
   "data_import": {
-    "output_image_dimensions": [114, 152],  // height, width
+    "output_image_dimensions": [114, 152],
     "unstandardized_photos": "/mnt/nfs/projects/hackathon_gem_Adam/data/hackathon/all_photos/",
     "standardized_photos": "/mnt/nfs/projects/hackathon_gem_Adam/data/hackathon/all_photos_standardized/",
     "data_description_file_path": "./data/filenames+labels.csv",
@@ -8,9 +8,9 @@
     "cache_file_path": "/mnt/nfs/projects/hackathon_gem_Adam/data/hackathon/data_set.cache",
 
     "loading_config": {
-        "multi_core_count": 140,
+        "multi_core_count": 30,
         "timeout_secs": 100,
-        "chunk_size": 100
+        "chunk_size": 10
     }
   }
 }
