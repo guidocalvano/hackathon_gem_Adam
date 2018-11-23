@@ -1,4 +1,9 @@
 {
+  "learning": {
+    "epochs": 100,
+    "batch_size": 320,
+    "architecture": "simple_binary_classification"
+  },
   "data_import": {
     "output_image_dimensions": [114, 152],
     "unstandardized_photos": "/mnt/nfs/projects/hackathon_gem_Adam/data/hackathon/all_photos/",
