@@ -161,7 +161,7 @@ class Learning:
 
         model.compile(optimizer='adam', loss=['mean_squared_error'], metrics=['mse'])
 
-        early_stopping = EarlyStopping(monitor='val_acc',
+        early_stopping = EarlyStopping(monitor='val_loss',
                                        patience=0,
                                        verbose=0, mode='auto')
 
