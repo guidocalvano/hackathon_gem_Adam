@@ -47,7 +47,7 @@ Then run
 python run_simple.py.
 ```
 
-### Analysis
+The command will run simple learning algorithms and rudimentary analyses.
 
 
 
