@@ -16,7 +16,7 @@ config = config.config
 
 di = DataImporter()
 
-data_set_dictionary = di.dataImporter.import_all_data(config["data_import"]["data_description_file_path"], config["data_import"]["standardized_photos"])
+data_set_dictionary = di.import_all_data(config["data_import"]["data_description_file_path"], config["data_import"]["standardized_photos"])
 
 print("DATA IMPORTED")
 
