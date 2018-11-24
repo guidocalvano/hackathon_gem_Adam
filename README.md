@@ -38,10 +38,16 @@ python run_data_import.py.
 
 To see any changable parameters for data import see defaults.json
 
-### Machine Learning
+### Learning and Analysis
 
+First run data import described above, and keeping that virtual environment active run:
 
-### Visualization
+Then run  
+```shell
+python run_simple.py.
+```
+
+### Analysis
 
 
 

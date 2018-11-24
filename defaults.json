@@ -1,4 +1,7 @@
 {
+  "analysis": {
+    "result_base_path": " /mnt/nfs/projects/hackathon_gem_Adam/data/hackathon/results"
+  },
   "learning": {
     "epochs": 100,
     "batch_size": 320,
