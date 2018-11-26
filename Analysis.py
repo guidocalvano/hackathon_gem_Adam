@@ -81,7 +81,7 @@ class Analysis:
         validation_confusion = sklearn.metrics.confusion_matrix(
             result["validation"]["correct"],
             result["validation"]["predicted"])
-        test_confusion = sklearn.metrics.classification_report(
+        test_confusion = sklearn.metrics.confusion_matrix(
             result["test"]["correct"],
             result["test"]["predicted"])
 
@@ -109,9 +109,13 @@ class Analysis:
 
     @staticmethod
     def compute_regression_stats_for_predictions(y_true, y_pred):
+
+        pearson_r, p_value = scipy.stats.pearsonr(y_true, y_pred)
+
         return {
                 "r2": sklearn.metrics.r2_score(y_true, y_pred),
-                "correlation": scipy.stats.pearsonr(y_true, y_pred),
+                "pearson_r": pearson_r,
+                "pearson_p_value": p_value,
                 "explained_variance_score": sklearn.metrics.explained_variance_score(y_true, y_pred),
                 "mean_squared_error": sklearn.metrics.mean_squared_error(y_true, y_pred),
                 "mean_absolute_error": sklearn.metrics.mean_absolute_error(y_true, y_pred),
@@ -170,25 +174,41 @@ class Analysis:
         os.makedirs(test_report_path, exist_ok=True)
 
 
-        with open(os.path.join(training_report_path, 'classification.txt'), "w") as report_file:
-            report_file.write(statistics["training"]["classification"])
+        Analysis.save_classification_report_csv(statistics["training"]["classification"], os.path.join(training_report_path, 'classification.csv'))
 
         pd.DataFrame(statistics["training"]["confusion"], columns=column_names, index=row_names).to_csv(
             os.path.join(training_report_path, 'confusion.csv'))
 
 
-        with open(os.path.join(validation_report_path, 'classification.txt'), "w") as report_file:
-            report_file.write(statistics["validation"]["classification"])
+        Analysis.save_classification_report_csv(statistics["validation"]["classification"], os.path.join(validation_report_path, 'classification.csv'))
 
         pd.DataFrame(statistics["validation"]["confusion"], columns=column_names, index=row_names).to_csv(
             os.path.join(validation_report_path, 'confusion.csv'))
 
 
-        with open(os.path.join(test_report_path, 'classification.txt'), "w") as report_file:
-            report_file.write(statistics["test"]["classification"])
+        Analysis.save_classification_report_csv(statistics["test"]["classification"], os.path.join(test_report_path, 'classification.csv'))
 
         pd.DataFrame(statistics["test"]["confusion"], columns=column_names, index=row_names).to_csv(
             os.path.join(test_report_path, 'confusion.csv'))
+
+
+    @staticmethod
+    def save_classification_report_csv(report, file_path):
+        report_data = []
+        lines = report.split('\n')
+        for line in lines[2:-3]:
+            row = {}
+            row_data = line.strip().split('      ')
+            row['class'] = row_data[0]
+            row['precision'] = float(row_data[1])
+            row['recall'] = float(row_data[2])
+            row['f1_score'] = float(row_data[3])
+            row['support'] = float(row_data[4])
+            report_data.append(row)
+
+        dataframe = pd.DataFrame.from_dict(report_data)
+        dataframe.to_csv(file_path, index=False)
+
 
     @staticmethod
     def produce_regression_report(report_path, statistics):
@@ -200,14 +220,14 @@ class Analysis:
         os.makedirs(validation_report_path, exist_ok=True)
         os.makedirs(test_report_path, exist_ok=True)
 
-        pd.DataFrame(statistics["training"]["regression"]).to_csv(os.path.join(training_report_path, 'regression.csv'))
+        pd.DataFrame([statistics["training"]["regression"]]).to_csv(os.path.join(training_report_path, 'regression.csv'), index=False)
         with open(os.path.join(training_report_path, 'regression.json'), "w") as report_file:
             json.dump(statistics["training"]["regression"], report_file)
 
-        pd.DataFrame(statistics["validation"]["regression"]).to_csv(os.path.join(validation_report_path, 'regression.csv'))
+        pd.DataFrame([statistics["validation"]["regression"]]).to_csv(os.path.join(validation_report_path, 'regression.csv'), index=False)
         with open(os.path.join(validation_report_path, 'regression.json'), "w") as report_file:
             json.dump(statistics["validation"]["regression"], report_file)
 
-        pd.DataFrame(statistics["test"]["regression"]).to_csv(os.path.join(test_report_path, 'regression.csv'))
+        pd.DataFrame([statistics["test"]["regression"]]).to_csv(os.path.join(test_report_path, 'regression.csv'), index=False)
         with open(os.path.join(test_report_path, 'regression.json'), "w") as report_file:
             json.dump(statistics["test"]["regression"], report_file)
