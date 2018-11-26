@@ -38,16 +38,25 @@ python run_data_import.py.
 
 To see any changable parameters for data import see defaults.json
 
-### Learning and Analysis
+### Learning
 
 First run data import described above, and keeping that virtual environment active run:
 
 Then run  
 ```shell
+source env/bin/activate
+
 python run_simple.py.
 ```
 
 The command will run simple learning algorithms and rudimentary analyses.
 
+### Analysis
+To produce statistical analysis of results run
+```shell
+source env/bin/activate
+
+python run_analysis.py.
+```
 
 
