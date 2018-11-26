@@ -43,6 +43,7 @@ class test_Analysis(unittest.TestCase):
 
         Analysis.store_raw_result(self.result_path, results)
         Analysis.process_result(self.result_path)
+        pass
 
     def test_simple_categorical_classification(self):
 
@@ -52,6 +53,7 @@ class test_Analysis(unittest.TestCase):
 
         Analysis.store_raw_result(self.result_path, results)
         Analysis.process_result(self.result_path)
+        pass
 
     def test_simple_crow_score_regression(self):
 

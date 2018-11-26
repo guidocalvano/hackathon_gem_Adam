@@ -65,15 +65,18 @@ class Analysis:
         training_report = sklearn.metrics.classification_report(
             result["training"]["correct"],
             result["training"]["predicted"],
-            target_names=result["meta"]["labels"])
+            target_names=result["meta"]["labels"],
+            output_dict=True)
         validation_report = sklearn.metrics.classification_report(
             result["validation"]["correct"],
             result["validation"]["predicted"],
-            target_names=result["meta"]["labels"])
+            target_names=result["meta"]["labels"],
+            output_dict=True)
         test_report = sklearn.metrics.classification_report(
             result["test"]["correct"],
             result["test"]["predicted"],
-            target_names=result["meta"]["labels"])
+            target_names=result["meta"]["labels"],
+            output_dict=True)
 
         training_confusion = sklearn.metrics.confusion_matrix(
             result["training"]["correct"],
@@ -173,7 +176,6 @@ class Analysis:
         os.makedirs(validation_report_path, exist_ok=True)
         os.makedirs(test_report_path, exist_ok=True)
 
-
         Analysis.save_classification_report_csv(statistics["training"]["classification"], os.path.join(training_report_path, 'classification.csv'))
 
         pd.DataFrame(statistics["training"]["confusion"], columns=column_names, index=row_names).to_csv(
@@ -195,15 +197,9 @@ class Analysis:
     @staticmethod
     def save_classification_report_csv(report, file_path):
         report_data = []
-        lines = report.split('\n')
-        for line in lines[2:-3]:
-            row = {}
-            row_data = line.strip().split()
-            row['class'] = row_data[0]
-            row['precision'] = float(row_data[1])
-            row['recall'] = float(row_data[2])
-            row['f1_score'] = float(row_data[3])
-            row['support'] = float(row_data[4])
+        for data in report.items():
+            row = {**data[1]}
+            row['class'] = data[0]
             report_data.append(row)
 
         dataframe = pd.DataFrame.from_dict(report_data)
