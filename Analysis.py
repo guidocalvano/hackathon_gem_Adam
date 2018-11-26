@@ -198,7 +198,7 @@ class Analysis:
         lines = report.split('\n')
         for line in lines[2:-3]:
             row = {}
-            row_data = line.strip().split('      ')
+            row_data = line.strip().split()
             row['class'] = row_data[0]
             row['precision'] = float(row_data[1])
             row['recall'] = float(row_data[2])
