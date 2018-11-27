@@ -1,6 +1,7 @@
 {
   "analysis": {
-    "result_base_path": "/mnt/nfs/projects/hackathon_gem_Adam/data/hackathon/results"
+    "result_base_path": "/mnt/nfs/projects/hackathon_gem_Adam/data/hackathon/results",
+    "result_browser_whitelist": ["regression.json", "regression.csv", "classification.csv", "confusion.csv"]
   },
   "learning": {
     "epochs": 100,
