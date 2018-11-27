@@ -30,7 +30,7 @@ define([], function() {
 
             window.data = data
             let maxData = data.reduce((max, row) => Math.max(max, Object.values(row).reduce((rowMax, v) => Math.max(rowMax, isNaN(parseFloat(v)) ? -Infinity : parseFloat(v)), -Infinity)), -Infinity)
-            let numberColorScale = d3.scaleSequential(d3.interpolateViridis).domain([0, maxData])
+            let numberColorScale = d3.scaleSequential(d3.interpolateRdYlBu).domain([maxData, 0])
             let colorScale = v => isNaN(parseFloat(v)) ? 'rgb(240, 240, 255)' : numberColorScale(parseFloat(v))
 
 
