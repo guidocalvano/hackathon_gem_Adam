@@ -1,0 +1,14 @@
+{
+  "constant_number": 1,
+  "constant_string": "asdf",
+  "constant_array": [[1, 2, 3]],
+  "constant_cell_string": ["asdf"],
+  "constant_cell_number": [123],
+  "deep_constant": {"constant":  1},
+  "deep_cell_constant": {"constant":  [1]},
+
+  "shallow_parameter": [1, 2, 3],
+  "deep_parameter": {"parameter":  ["a", "b", "c"]},
+  "deep_complex_parameter": {"parameter":  ["e", "f", "g"], "parameter2": [3, 2, 1]}
+
+}
