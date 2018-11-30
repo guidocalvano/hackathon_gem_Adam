@@ -1,0 +1,16 @@
+{
+  "target_function": "test_learning",
+  "initial_random_point_count": 3,
+  "constant_number": 1,
+  "constant_string": "asdf",
+  "constant_array": [[1, 2, 3]],
+  "constant_cell_string": ["asdf"],
+  "constant_cell_number": [123],
+  "deep_constant": {"constant":  1},
+  "deep_cell_constant": {"constant":  [1]},
+
+  "shallow_parameter": [1, 2, 3],
+  "deep_parameter": {"parameter":  [4, 5, 6]},
+  "deep_complex_parameter": {"parameter":  [7, 8, 9], "parameter2": [10, 11, 12]}
+
+}

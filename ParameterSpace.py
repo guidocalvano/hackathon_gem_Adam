@@ -50,18 +50,28 @@ class ParameterSpace:
         pathToTypeDictionary = pathToTypeDictionary if pathToTypeDictionary is not None else {}
 
         if not isinstance(config, dict):
-            pathToTypeDictionary[pathOffset] = type(config)
+
+            if isinstance(config, list) and len(config) >= 1:
+                # if config is length 1 then it is a constant and the type should be the single element
+                # if config is larger than length 1, then it is not a constant but a list of parameter options
+                # and the type should be the type of the first element (which should be the same as all subsequent elements).
+                pathToTypeDictionary[pathOffset] = type(config[0])
+                return
+
+            pathToTypeDictionary[pathOffset] = list
+
             return
 
+        if len(pathOffset) > 0:
+            pathOffset = pathOffset + self.pathSeparator
+
         for key in config.keys():
-            if len(pathOffset) > 0:
-                pathOffset = pathOffset + self.pathSeparator
 
             self.getPathToTypeDictionary(config[key], pathOffset + key, pathToTypeDictionary)
 
         return pathToTypeDictionary
 
-    def try_collapse_paremeter_arrays(self):
+    def try_collapse_parameter_arrays(self):
 
         if not isinstance(self.config, dict): return
 
@@ -124,7 +134,7 @@ class ParameterSpace:
         copy = self.copy()
         copy.apply_arguments(flattened_instantiation)
 
-        copy.try_collapse_paremeter_arrays()
+        copy.try_collapse_parameter_arrays()
 
         return copy.config
 
@@ -154,6 +164,19 @@ class ParameterSpace:
 
         cursor[pathNodes[-1]] = value
         changesCursor[pathNodes[-1]] = value
+
+    def getPath(self, path):
+
+        cursor = self.config
+
+        pathNodes = path.split(self.pathSeparator)
+
+        for i in range(len(pathNodes)):
+            nextNode = pathNodes[i]
+
+            cursor = cursor[nextNode]
+
+        return cursor
 
     def apply_arguments(self, parsed):
 
