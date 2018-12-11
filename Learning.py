@@ -192,7 +192,7 @@ class Learning:
         validation_based_learning_rate = ReduceLROnPlateau(patience=1, factor=.5, mode='min', min_lr=0)
 
         # and when that has not worked for a few epochs, just stop
-        early_stopping = EarlyStopping(monitor='val_acc',
+        early_stopping = EarlyStopping(monitor='val_loss',
                                        patience=3,
                                        verbose=0, mode='auto')
 
@@ -210,13 +210,13 @@ class Learning:
     @staticmethod
     def evaluate(model, results, data_set, metric_names, batch_size):
         training_metrics = model.evaluate(data_set["training"][0], data_set["to_network"](data_set["training"][1]))
-        training_prediction = data_set["from_network"](model.predict(data_set["training"][0], batch_size=batch_size)).tolist()
+        training_prediction = data_set["from_network"](model.predict(data_set["training"][0], batch_size=batch_size))
 
         validation_metrics = model.evaluate(data_set["validation"][0], data_set["to_network"](data_set["validation"][1]))
-        validation_prediction = data_set["from_network"](model.predict(data_set["validation"][0], batch_size=batch_size)).tolist()
+        validation_prediction = data_set["from_network"](model.predict(data_set["validation"][0], batch_size=batch_size))
 
         test_metrics = model.evaluate(data_set["test"][0], data_set["to_network"](data_set["test"][1]))
-        test_prediction = data_set["from_network"](model.predict(data_set["test"][0], batch_size=batch_size)).tolist()
+        test_prediction = data_set["from_network"](model.predict(data_set["test"][0], batch_size=batch_size))
 
         return {
             "stats": {
