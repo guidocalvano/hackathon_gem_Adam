@@ -215,7 +215,7 @@ class Learning:
         validation_metrics = model.evaluate(data_set["validation"][0], data_set["to_network"](data_set["validation"][1]))
         validation_prediction = data_set["from_network"](model.predict(data_set["validation"][0], batch_size=batch_size)).tolist()
 
-        test_metrics = model.evaluate(data_set["test"][0], data_set["to_network"](data_set["test"][1])).tolist()
+        test_metrics = model.evaluate(data_set["test"][0], data_set["to_network"](data_set["test"][1]))
         test_prediction = data_set["from_network"](model.predict(data_set["test"][0], batch_size=batch_size)).tolist()
 
         return {
