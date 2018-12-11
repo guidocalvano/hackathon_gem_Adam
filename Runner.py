@@ -46,15 +46,20 @@ class Runner:
 
         return os.path.join(self.parameter_space_path, self.parameter_space.configuration_name(params))
 
+    def make_tensorboard_path(self, params):
+
+        return os.path.join(self.parameter_space_path, 'tensorboard', self.parameter_space.configuration_name(params))
+
     def generate_result(self, target_function, params):
 
         result_path = self.make_result_file_path(params)
+        tensorboard_path = self.make_tensorboard_path(params)
 
         os.makedirs(result_path, exist_ok=True)
 
         config = self.parameter_space.apply_instantiation(params)
 
-        performance, raw_analysis = target_function({**config, "result_path": result_path})
+        performance, raw_analysis = target_function({**config, "result_path": result_path, "tensorboard_path": tensorboard_path})
 
         Analysis.store_raw_result(result_path, raw_analysis)
 
