@@ -43,13 +43,8 @@ class Runner:
         )
 
     def make_result_file_path(self, params):
-        parameter_instantiation_name = ""
 
-        for param, value in list(sorted(params.items())):
-            parameter_instantiation_name = parameter_instantiation_name + "_" + param.replace('/', '_') + '_' + str(
-                value)
-
-        return os.path.join(self.parameter_space_path, parameter_instantiation_name)
+        return os.path.join(self.parameter_space_path, self.parameter_space.configuration_name(params))
 
     def generate_result(self, target_function, params):
 

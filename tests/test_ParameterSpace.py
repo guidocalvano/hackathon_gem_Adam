@@ -84,6 +84,7 @@ class test_ParameterSpace(unittest.TestCase):
                 "deep_complex_parameter/parameter2": 2
             })
         self.assertTrue(config == {
+            "configuration_name": "-deep_complex_parameter@parameter@e-deep_complex_parameter@parameter2@2-deep_parameter@parameter@b-shallow_parameter@1",
             "constant_number": 1,
             "constant_string": "asdf",
             "constant_array": [1, 2, 3],
@@ -98,7 +99,7 @@ class test_ParameterSpace(unittest.TestCase):
 
         }, 'instantiation must be assigned correctly')
 
-    def test_flatten_paramter_space(self):
+    def test_flatten_parameter_space(self):
         flattened = self.parameter_space.flatten_parameters()
 
         self.assertTrue(flattened == {
@@ -107,3 +108,179 @@ class test_ParameterSpace(unittest.TestCase):
             "deep_complex_parameter/parameter": ["e", "f", "g"],
             "deep_complex_parameter/parameter2": [3, 2, 1]
         }, 'parameter space must be flattened correctly')
+
+    def test__flattened_space_unit_sizes(self):
+        unit_sizes, space_size = self.parameter_space._flattened_space_unit_sizes({
+            "a": [4, 5, 6],
+            "b": [2, 3],
+            "c": ["x", "y", "z", "d"]
+        })
+
+        self.assertTrue(space_size == 24)
+
+        self.assertTrue(unit_sizes["a"] == 8)
+        self.assertTrue(unit_sizes["b"] == 4)
+        self.assertTrue(unit_sizes["c"] == 1)
+
+    def test__configuration_index_to_parameter_indices(self):
+        unit_sizes, space_size = self.parameter_space._flattened_space_unit_sizes({
+            "a": [4, 5, 6],
+            "b": [2, 3],
+            "c": ["x", "y", "z", "d"]
+        })
+
+        index_map = self.parameter_space._configuration_index_to_parameter_indices(unit_sizes, 0)
+
+        self.assertTrue(index_map["a"] == 0)
+        self.assertTrue(index_map["b"] == 0)
+        self.assertTrue(index_map["c"] == 0)
+
+        index_map = self.parameter_space._configuration_index_to_parameter_indices(unit_sizes, 1)
+
+        self.assertTrue(index_map["a"] == 0)
+        self.assertTrue(index_map["b"] == 0)
+        self.assertTrue(index_map["c"] == 1)
+
+        index_map = self.parameter_space._configuration_index_to_parameter_indices(unit_sizes, 4)
+
+        self.assertTrue(index_map["a"] == 0)
+        self.assertTrue(index_map["b"] == 1)
+        self.assertTrue(index_map["c"] == 0)
+
+        index_map = self.parameter_space._configuration_index_to_parameter_indices(unit_sizes, 8)
+
+        self.assertTrue(index_map["a"] == 1)
+        self.assertTrue(index_map["b"] == 0)
+        self.assertTrue(index_map["c"] == 0)
+
+        index_map = self.parameter_space._configuration_index_to_parameter_indices(unit_sizes, 8 + 4 + 1)
+
+        self.assertTrue(index_map["a"] == 1)
+        self.assertTrue(index_map["b"] == 1)
+        self.assertTrue(index_map["c"] == 1)
+
+        index_map = self.parameter_space._configuration_index_to_parameter_indices(unit_sizes, 23)
+
+        self.assertTrue(index_map["a"] == 2)
+        self.assertTrue(index_map["b"] == 1)
+        self.assertTrue(index_map["c"] == 3)
+
+    def test___flat_space_index_to_configuration(self):
+
+        flattened_space = {
+            "a": [4, 5, 6],
+            "b": [2, 3],
+            "c": ["x", "y", "z", "d"]
+        }
+
+        unit_sizes, space_size = self.parameter_space._flattened_space_unit_sizes(flattened_space)
+
+        config_map = self.parameter_space._flat_space_index_to_configuration(
+            flattened_space,
+            self.parameter_space._configuration_index_to_parameter_indices(unit_sizes, 0))
+
+
+        self.assertTrue(config_map["a"] == 4)
+        self.assertTrue(config_map["b"] == 2)
+        self.assertTrue(config_map["c"] == "x")
+
+        config_map = self.parameter_space._flat_space_index_to_configuration(
+            flattened_space,
+            self.parameter_space._configuration_index_to_parameter_indices(unit_sizes, 1))
+
+        self.assertTrue(config_map["a"] == 4)
+        self.assertTrue(config_map["b"] == 2)
+        self.assertTrue(config_map["c"] == "y")
+
+        config_map = self.parameter_space._flat_space_index_to_configuration(
+            flattened_space,
+            self.parameter_space._configuration_index_to_parameter_indices(unit_sizes, 4))
+
+        self.assertTrue(config_map["a"] == 4)
+        self.assertTrue(config_map["b"] == 3)
+        self.assertTrue(config_map["c"] == "x")
+
+        config_map = self.parameter_space._flat_space_index_to_configuration(
+            flattened_space,
+            self.parameter_space._configuration_index_to_parameter_indices(unit_sizes, 8))
+
+        self.assertTrue(config_map["a"] == 5)
+        self.assertTrue(config_map["b"] == 2)
+        self.assertTrue(config_map["c"] == "x")
+
+        config_map = self.parameter_space._flat_space_index_to_configuration(
+            flattened_space,
+            self.parameter_space._configuration_index_to_parameter_indices(unit_sizes, 8 + 4 + 1))
+
+        self.assertTrue(config_map["a"] == 5)
+        self.assertTrue(config_map["b"] == 3)
+        self.assertTrue(config_map["c"] == "y")
+
+        config_map = self.parameter_space._flat_space_index_to_configuration(
+            flattened_space,
+            self.parameter_space._configuration_index_to_parameter_indices(unit_sizes, 23))
+
+        self.assertTrue(config_map["a"] == 6)
+        self.assertTrue(config_map["b"] == 3)
+        self.assertTrue(config_map["c"] == "d")
+
+    def test_list_all_flattened_parameter_configurations(self):
+        flattened_space = {
+            "a": [4, 5, 6],
+            "b": [2, 3],
+            "c": ["x", "y", "z", "d"]
+        }
+
+        configs = self.parameter_space.list_all_flattened_parameter_configurations(flattened_space)
+
+        config_map = configs[0]
+
+        self.assertTrue(config_map["a"] == 4)
+        self.assertTrue(config_map["b"] == 2)
+        self.assertTrue(config_map["c"] == "x")
+
+        config_map = configs[1]
+
+        self.assertTrue(config_map["a"] == 4)
+        self.assertTrue(config_map["b"] == 2)
+        self.assertTrue(config_map["c"] == "y")
+
+        config_map = configs[4]
+
+        self.assertTrue(config_map["a"] == 4)
+        self.assertTrue(config_map["b"] == 3)
+        self.assertTrue(config_map["c"] == "x")
+
+        config_map = configs[23]
+
+        self.assertTrue(config_map["a"] == 6)
+        self.assertTrue(config_map["b"] == 3)
+        self.assertTrue(config_map["c"] == "d")
+
+    def test_get_configuration_grid(self):
+
+        config_grid = self.parameter_space.get_configuration_grid()
+
+        self.assertTrue(len(config_grid) == 81)
+
+        self.assertTrue(config_grid[0]["shallow_parameter"] == 1)
+        self.assertTrue(config_grid[0]["deep_parameter"]["parameter"] == "a")
+
+        self.assertTrue(config_grid[0]["deep_complex_parameter"]["parameter"] == "e")
+        self.assertTrue(config_grid[0]["deep_complex_parameter"]["parameter2"] == 3)
+
+        self.assertTrue(config_grid[80]["shallow_parameter"] == 3)
+        self.assertTrue(config_grid[80]["deep_parameter"]["parameter"] == "c")
+
+        self.assertTrue(config_grid[80]["deep_complex_parameter"]["parameter"] == "g")
+        self.assertTrue(config_grid[80]["deep_complex_parameter"]["parameter2"] == 1)
+
+    def test_configuration_name(self):
+        rfp = self.parameter_space.configuration_name({
+                "shallow_parameter": 1,
+                "deep_parameter/parameter": "b",
+                "deep_complex_parameter/parameter": "e",
+                "deep_complex_parameter/parameter2": 2
+            })
+
+        self.assertTrue(rfp == os.path.join('-deep_complex_parameter@parameter@e-deep_complex_parameter@parameter2@2-deep_parameter@parameter@b-shallow_parameter@1'))

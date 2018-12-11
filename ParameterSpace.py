@@ -8,7 +8,8 @@ class ParameterSpace:
 
     @staticmethod
     def load(filePath='./defaults.json'):
-        return ParameterSpace(json.load(open(filePath, 'r')))
+        with open(filePath, 'r') as f:
+            return ParameterSpace(json.load(f))
 
     def __init__(self, config):
 
@@ -136,6 +137,9 @@ class ParameterSpace:
 
         copy.try_collapse_parameter_arrays()
 
+        name = self.configuration_name(flattened_instantiation)
+        copy.config["configuration_name"] = name
+
         return copy.config
 
     def setPath(self, path, value):
@@ -154,16 +158,23 @@ class ParameterSpace:
             cursor = cursor[nextNode]
             changesCursor = changesCursor[nextNode]
 
-        if not isinstance(cursor[pathNodes[-1]], list) or len(cursor[pathNodes[-1]]) < 2 or (value not in cursor[pathNodes[-1]]):
+        try:
+            if not isinstance(cursor[pathNodes[-1]], list): raise Exception("Trying to instantiate parameter, but path does not specify parameter.")
+            if len(cursor[pathNodes[-1]]) < 2: raise Exception("not a property")
+            if value not in cursor[pathNodes[-1]]: raise Exception("invalid option")
+
+            if isinstance(value, list): value = [value]
+
+            cursor[pathNodes[-1]] = value
+            changesCursor[pathNodes[-1]] = value
+        except Exception as e:
+            print(e)
             print("Attempting to assign invalid value to parameter in this parameter space: \n" +
                   str(value) + " at path " + json.dumps(path))
 
             print("You are advised to create a new parameter space that allows assignment of the value.")
             print("Aborting execution")
             sys.exit()
-
-        cursor[pathNodes[-1]] = value
-        changesCursor[pathNodes[-1]] = value
 
     def getPath(self, path):
 
@@ -182,4 +193,100 @@ class ParameterSpace:
 
         for path in parsed.keys():
             if parsed[path] is not None:
-                self.setPath(path, parsed[path])
+                value = parsed[path]
+
+                self.setPath(path, value)
+
+    def get_configuration_grid(self):
+        # To create the configuration grid without resorting to
+        # complicated recursive functions I number all
+        # possible configurations with an integer,
+        # and then convert that integer into a different number
+        # system, where each digit choses one parameter value.
+        # The most practical number system is multi radix, i.e. it does not use a single
+        # 'radix' (2 is the radix of a binary number system, 3 of a ternary
+        # and 10 of a decimal number system). Instead it uses multiple radixes.
+        # A good example of a multi radix system is time expressed in years, days,
+        # hours, minutes and seconds.
+        # Applied to this case: If you have 3 options for param 1, 5 for param 2 and 2 for param 3
+        # then the first digit ranges from 0 to 2, the second from 0 to 4 and the last
+        # is either 0 or 1. Whenever a digit increases beyond its range, it resets to 0,
+        # and the next digit increases by 1, until it too increases beyond its range, and
+        # the next digit increases by 1, and so one recursively.
+        # To determine the value of the highest digit we must know how large a single unit is.
+        # To compute the value of the highest digit, divide by the size of a single unit of
+        # the highest digit, and discard the fraction. To compute the next digit, subtract
+        # the highest digit, and divide the remaining value by the size of a unit of the next
+        # digit, and continue for all digits recursively.
+
+        flattened_space = self.flatten_parameters()
+
+        flattened_configuration_list = self.list_all_flattened_parameter_configurations(flattened_space)
+
+        full_configuration_list = list(map(lambda fc: self.apply_instantiation(fc), flattened_configuration_list))
+
+        return full_configuration_list
+
+    def list_all_flattened_parameter_configurations(self, flattened_space):
+
+        mixed_radix_unit_size, space_size = self._flattened_space_unit_sizes(flattened_space)
+
+        flattened_index_list = self._flattened_space_unit_size_to_index_lists(mixed_radix_unit_size, space_size)
+
+        flattened_configuration_list = list(map(lambda flattened_index: self._flat_space_index_to_configuration(flattened_space, flattened_index), flattened_index_list))
+
+        return flattened_configuration_list
+
+    def _flattened_space_unit_sizes(self, flattened_space):
+
+        mixed_radix_unit_size = {}
+        product = 1
+
+        for parameter, options in reversed(sorted(flattened_space.items())):
+            mixed_radix_unit_size[parameter] = product
+
+            product *= len(options)
+
+        space_size = product
+
+        return mixed_radix_unit_size, space_size
+
+    def _flattened_space_unit_size_to_index_lists(self, mixed_radix_unit_size, space_size):
+        index_list = []
+        for i in range(space_size):
+            next_configuration = self._configuration_index_to_parameter_indices(mixed_radix_unit_size, i)
+            index_list.append(next_configuration)
+
+        return index_list
+
+    def _configuration_index_to_parameter_indices(self, mixed_radix_unit_size, still_unbroken_index):
+        next_configuration = {}
+
+        for parameter, options in sorted(mixed_radix_unit_size.items()):
+            scale = mixed_radix_unit_size[parameter]
+            next_digit = int(still_unbroken_index / scale)
+            still_unbroken_index -= next_digit * scale  # note that cast to int rounded down
+            next_configuration[parameter] = next_digit  # i.e. pick the parameter
+
+        return next_configuration
+
+    def _flat_space_index_to_configuration(self, flattened_space, index_map):
+
+        configuration = {}
+
+        for key, values in flattened_space.items():
+            configuration[key] = values[index_map[key]]
+
+        return configuration
+
+    def configuration_name(self, flattened_parameters):
+        parameter_configuration_name = ""
+
+        for param, value in list(sorted(flattened_parameters.items())):
+            if parameter_configuration_name != "":
+                parameter_configuration_name = parameter_configuration_name + "/"
+
+            parameter_configuration_name = parameter_configuration_name + param.replace('/', '@') + '@' + str(
+                value)
+
+        return parameter_configuration_name

@@ -10,6 +10,7 @@ import sys
 import scipy
 import scipy.misc
 from itertools import compress
+import json
 
 
 class DataImporter:
@@ -30,7 +31,6 @@ class DataImporter:
         sink_image_file_paths = list(map(lambda file_name: os.path.join(sink_path, file_name), successful_target_images))
 
         self.save_image_tensors(sink_image_file_paths, standardized_images)
-
 
     @staticmethod
     def load_from_cache(cache_file_path, data_description_file_path, standardized_photos_file_path):
@@ -202,6 +202,7 @@ class DataImporter:
             i = 0
             while True:
                 try:
+                    standardized_image = None
                     standardized_image, is_successful = next(iterator)
 
                     if not is_successful:

@@ -166,7 +166,7 @@ class test_Runner(unittest.TestCase):
                 "deep_complex_parameter/parameter2": 2
             })
 
-        self.assertTrue(rfp == os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources/runner/test_parameter_space/_deep_complex_parameter_parameter_e_deep_complex_parameter_parameter2_2_deep_parameter_parameter_b_shallow_parameter_1'))
+        self.assertTrue(rfp == os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources/runner/test_parameter_space/-deep_complex_parameter@parameter@e-deep_complex_parameter@parameter2@2-deep_parameter@parameter@b-shallow_parameter@1'))
 
     def test_generate_result(self):
 

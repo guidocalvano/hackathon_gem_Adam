@@ -1,0 +1,47 @@
+{
+  "analysis": {
+    "result_base_path": "/mnt/nfs/projects/hackathon_gem_Adam/data/hackathon/results",
+    "result_browser_whitelist": [["regression.json", "regression.csv", "classification.csv", "confusion.csv"]]
+  },
+  "learning": {
+    "hardware_limits": {
+      "epochs": 100,
+      "batch_size": 320
+    },
+    "target": [
+        {
+          "output_type": "bool",
+          "column_header": "label_clean_int",
+          "value_names": [["dirty", "clean"]]
+        },
+        {
+          "output_type": "categorical_int",
+          "column_header": "label_type_int",
+          "value_names": "label_type_str"
+        },
+        {
+          "output_type": "float",
+          "column_header": "label_crow_score_int",
+          "value_names": "label_crow_str"
+        }
+    ],
+    "architecture": ["linear", "tree"],
+    "layer_type": ["inception", "resnet"],
+    "output_aggregation": ["dense", "static_channel_aggregation"],
+    "l1_factor": [1, 0.1, 0.01, 0.001, 0.0001],
+    "l2_factor": [1, 0.1, 0.01, 0.001, 0.0001],
+    "initial_learning_rate": 0.01
+  },
+  "data_import": {
+    "output_image_dimensions": [[114, 152], [228, 304], [456, 608]],
+    "unstandardized_photos": "resources/parameter_data_import/unstandardized_photos",
+    "standardized_photos": "resources/parameter_data_import/standardized_photos",
+    "data_description_file_path": "resources/parameter_data_import/test_photos.csv",
+
+    "loading_config": {
+        "multi_core_count": 2,
+        "timeout_secs": 100,
+        "chunk_size": 2
+    }
+  }
+}
