@@ -201,8 +201,8 @@ class Learning:
         results = model.fit(training_set[0],
                             training_set[1],
                             validation_data=validation_set,
-                            epochs=epochs,
-                            batch_size=batch_size,
+                            epochs=int(epochs),
+                            batch_size=int(batch_size),
                             callbacks=[validation_based_learning_rate, tensorboard_logger, early_stopping])
 
         return results
@@ -210,30 +210,30 @@ class Learning:
     @staticmethod
     def evaluate(model, results, data_set, metric_names, batch_size):
         training_metrics = model.evaluate(data_set["training"][0], data_set["to_network"](data_set["training"][1]))
-        training_prediction = data_set["from_network"](model.predict(data_set["training"][0], batch_size=batch_size))
+        training_prediction = data_set["from_network"](model.predict(data_set["training"][0], batch_size=batch_size)).tolist()
 
         validation_metrics = model.evaluate(data_set["validation"][0], data_set["to_network"](data_set["validation"][1]))
-        validation_prediction = data_set["from_network"](model.predict(data_set["validation"][0], batch_size=batch_size))
+        validation_prediction = data_set["from_network"](model.predict(data_set["validation"][0], batch_size=batch_size)).tolist()
 
-        test_metrics = model.evaluate(data_set["test"][0], data_set["to_network"](data_set["test"][1]))
-        test_prediction = data_set["from_network"](model.predict(data_set["test"][0], batch_size=batch_size))
+        test_metrics = model.evaluate(data_set["test"][0], data_set["to_network"](data_set["test"][1])).tolist()
+        test_prediction = data_set["from_network"](model.predict(data_set["test"][0], batch_size=batch_size)).tolist()
 
         return {
             "stats": {
                 "training": {
                     "history": results.history,
                     "metrics": dict(zip(metric_names, training_metrics)),
-                    "correct": data_set["training"][1],
+                    "correct": data_set["training"][1].tolist(),
                     "predicted": training_prediction.reshape(-1).tolist()
                 },
                 "validation": {
                     "metrics": dict(zip(metric_names, validation_metrics)),
-                    "correct": data_set["validation"][1],
+                    "correct": data_set["validation"][1].tolist(),
                     "predicted": validation_prediction.reshape(-1).tolist()
                 },
                 "test": {
                     "metrics": dict(zip(metric_names, test_metrics)),
-                    "correct": data_set["test"][1],
+                    "correct": data_set["test"][1].tolist(),
                     "predicted": test_prediction.reshape(-1).tolist()
                 },
                 "meta": {
