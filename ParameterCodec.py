@@ -1,5 +1,6 @@
 from Math import Math
 import numpy as np
+import json
 
 
 class ParameterCodec:
@@ -117,8 +118,9 @@ class NominalParamCodec:
         self.count = len(bounds)
 
         sorted_names = sorted(bounds)
+        hashed_names = map(lambda name: json.dumps(name), sorted_names)
         assigned_name_indices = list(range(self.count))
-        self.name_to_vertex_id_map = dict(zip(sorted_names, assigned_name_indices))
+        self.name_to_vertex_id_map = dict(zip(hashed_names, assigned_name_indices))
         self.vertex_id_to_name_map = sorted_names
 
         self.vertices_for_values = Math.k_simplex(self.count)
@@ -130,7 +132,7 @@ class NominalParamCodec:
         return self.vertex_id_to_name_map[target_index]
 
     def to_real(self, name):
-        return self.vertices_for_values[self.name_to_vertex_id_map[name], :]
+        return self.vertices_for_values[self.name_to_vertex_id_map[json.dumps(name)], :]
 
     def random_real(self):
         return self.vertices_for_values[np.random.choice(self.count), :]
