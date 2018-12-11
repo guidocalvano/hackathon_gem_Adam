@@ -307,7 +307,7 @@ class Learning:
 
         # All network feature outputs are now constructed, and can be aggregated into label_scores using a dense layer.
         # I really hate this Dense layer because it in all likelihood will consume about half of the computation budget...
-        label_scores = Dense(units=label_count, kernel_initializer='glorot_normal', kernel_regularizer=regularizer, bias_regularizer=regularizer)(network_feature_scores)
+        label_scores = Dense(units=int(label_count), kernel_initializer='glorot_normal', kernel_regularizer=regularizer, bias_regularizer=regularizer)(network_feature_scores)
 
         # average_pooling_cost = np.prod(inp.shape[1:].as_list())
         # dense_cost = inp.shape[-1].value * label_count
@@ -372,14 +372,14 @@ class Learning:
     @staticmethod
     def resnet_convolution(inp, stride, filter_increase_factor, regularizer):
 
-        filter_count = round(inp.shape[-1].value * filter_increase_factor)
+        filter_count = int(round(inp.shape[-1].value * filter_increase_factor))
 
         kernel_size = (3, 3)
 
         convoluted_weights = Conv2D(
             filter_count,
             kernel_size,
-            strides=(stride, stride),
+            strides=(int(stride), int(stride)),
             padding='same',
             kernel_initializer='glorot_normal',
             bias_initializer='glorot_normal',
@@ -396,12 +396,12 @@ class Learning:
     @staticmethod
     def initial_convolution(inp, initial_stride, initial_filter_count, initial_kernel_size, regularizer):
 
-        kernel_size = (initial_kernel_size, initial_kernel_size)
+        kernel_size = (int(initial_kernel_size), int(initial_kernel_size))
 
         convoluted_weights = Conv2D(
-            initial_filter_count,
+            int(initial_filter_count),
             kernel_size,
-            strides=(initial_stride, initial_stride),
+            strides=(int(initial_stride), int(initial_stride)),
             padding='same',
             kernel_initializer='glorot_normal',
             bias_initializer='glorot_normal',
