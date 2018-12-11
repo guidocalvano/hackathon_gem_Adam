@@ -11,7 +11,7 @@ class ParameterCodec:
             if bounds_specs[1] is None:
                 return RealParamCodec(bounds_specs)
 
-            if isinstance(bounds_specs[0], str):
+            if isinstance(bounds_specs[0], str) or isinstance(bounds_specs[0], list):
                 return NominalParamCodec(bounds_specs)
 
             return NumberParamCodec(bounds_specs)
