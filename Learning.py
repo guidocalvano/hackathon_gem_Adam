@@ -258,7 +258,7 @@ class Learning:
 
         residual_stride = 0
         # total_layer_cost = 0
-        for i in range(block_depth):
+        for i in range(int(block_depth)):
             stride = 1
             filter_increase_factor = 1
 
@@ -338,7 +338,7 @@ class Learning:
 
         current = inp
 
-        for i in range(skip_distance):
+        for i in range(int(skip_distance)):
 
             next_stride = stride if i == 0 else 1
             next_filter_increase_factor = filter_increase_factor if i == 0 else 1
