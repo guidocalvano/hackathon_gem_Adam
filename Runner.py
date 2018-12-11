@@ -4,9 +4,6 @@ import os
 import os.path
 import sys
 from BayesianOptimizer import BayesianOptimizer
-from bayes_opt.util import load_logs
-from bayes_opt.observer import JSONLogger
-from bayes_opt.event import Events
 import json
 
 
