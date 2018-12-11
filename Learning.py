@@ -57,7 +57,7 @@ class Learning:
         if data_sets["output_type"] == 'categorical_int' or data_sets["output_type"] == 'bool':
             raw_performance = stats['stats']['validation']['metrics']['acc']
         else:
-            raw_performance = stats['stats']['validation']['metrics']['mean_squared_error']
+            raw_performance = -stats['stats']['validation']['metrics']['mean_squared_error']
         return raw_performance, stats
 
     @staticmethod
