@@ -1,0 +1,44 @@
+{
+  "target_function": "resnet",
+  "analysis": {
+    "result_base_path": "resources/run/results",
+    "result_browser_whitelist": [["regression.json", "regression.csv", "classification.csv", "confusion.csv"]]
+  },
+  "learning": {
+    "hardware_limits": {
+      "epochs": 1,
+      "batch_size": 4
+    },
+    "target":
+        {
+          "output_type": "bool",
+          "column_header": "label_clean_int",
+          "value_names": [["dirty", "clean"]]
+        },
+    "block_depth": [1, 2],
+    "skip_distance": 2,
+    "blocks_per_rescale": 2,
+    "stride_difference_per_rescale": 2,
+    "filter_increase_factor_per_rescale": 2,
+    "initial_filter_count": 16,
+    "initial_stride": 2,
+    "initial_kernel_size": 5,
+
+    "output_aggregation": "channel_softmax",
+    "l1_factor": 0.00001,
+    "l2_factor": 0.00001,
+    "initial_learning_rate": 0.01
+  },
+  "data_import": {
+    "output_image_dimensions": [[128, 128], [256, 256]],
+    "unstandardized_photos": "resources/run/unstandardized_photos/",
+    "standardized_photos": "resources/run/standardized_photos/",
+    "data_description_file_path": "resources/run/test_photos.csv",
+
+    "loading_config": {
+        "multi_core_count": 15,
+        "timeout_secs": 100,
+        "chunk_size": 10
+    }
+  }
+}

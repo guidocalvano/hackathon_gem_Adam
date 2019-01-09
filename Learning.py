@@ -221,20 +221,20 @@ class Learning:
         return {
             "stats": {
                 "training": {
-                    "history": results.history,
+                    "history": Learning.history_to_json_serializable(results.history),
                     "metrics": dict(zip(metric_names, training_metrics)),
                     "correct": data_set["training"][1].tolist(),
-                    "predicted": training_prediction.reshape(-1).tolist()
+                    "predicted": training_prediction.reshape([-1, 1]).tolist()
                 },
                 "validation": {
                     "metrics": dict(zip(metric_names, validation_metrics)),
                     "correct": data_set["validation"][1].tolist(),
-                    "predicted": validation_prediction.reshape(-1).tolist()
+                    "predicted": validation_prediction.reshape([-1, 1]).tolist()
                 },
                 "test": {
                     "metrics": dict(zip(metric_names, test_metrics)),
                     "correct": data_set["test"][1].tolist(),
-                    "predicted": test_prediction.reshape(-1).tolist()
+                    "predicted": test_prediction.reshape([-1, 1]).tolist()
                 },
                 "meta": {
                     "type": data_set["output_type"],
@@ -243,6 +243,20 @@ class Learning:
             },
             "model": model
         }
+
+    @staticmethod
+    def history_to_json_serializable(d):
+        new_dict = {}
+
+        for key in d.keys():
+
+            new_dict[key] = Learning.list_to_json_serializable(d[key])
+
+        return new_dict
+
+    @staticmethod
+    def list_to_json_serializable(l):
+        return list(map(lambda x: float(x), l))
 
     @staticmethod
     def build_linear_architecture(

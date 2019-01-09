@@ -97,5 +97,3 @@ class TestConfiguration(unittest.TestCase):
         }, 'multiple args must be assigned correctly')
 
         self.assertTrue(config_name == '--a#4#--b/c#5#--d#asdf')
-
-
